@@ -67,7 +67,7 @@ QEMU := $(shell if uname | grep -i Darwin >/dev/null 2>&1; \
 endif
 
 # try to generate a unique GDB port
-GDBPORT	:= $(shell expr $$UID % 5000 + 25000)
+GDBPORT	:= $(shell expr `id -u` % 5000 + 25000)
 
 CC	:= $(GCCPREFIX)gcc -pipe
 AS	:= $(GCCPREFIX)as
@@ -127,7 +127,7 @@ include kern/Makefrag
 
 
 IMAGES = $(OBJDIR)/kern/kernel.img
-QEMUOPTS = -hda $(OBJDIR)/kern/kernel.img -parallel /dev/stdout -no-kqemu
+QEMUOPTS = -hda $(OBJDIR)/kern/kernel.img -parallel /dev/stdout
 
 .gdbinit: .gdbinit.tmpl
 	sed "s/localhost:1234/localhost:$(GDBPORT)/" < $^ > $@

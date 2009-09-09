@@ -2,7 +2,7 @@
 
 qemuopts="-hda obj/kern/kernel.img"
 qemuphys=1
-source grade-functions.sh
+. ./grade-functions.sh
 
 
 $make
