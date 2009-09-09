@@ -37,7 +37,7 @@ run () {
 	t0=`date +%s.%N 2>/dev/null`
 	(
 		ulimit -t $timeout
-		$qemu -nographic $qemuopts -serial null -parallel file:jos.out -s -S -gdb tcp::$port
+		$qemu -nographic $qemuopts -serial null -parallel file:jos.out -monitor null -s -S -p $port
 	) >$out 2>$err &
 
 	(
@@ -50,6 +50,7 @@ run () {
 		echo c
 	) > jos.in
 
+	sleep 1
 	gdb -batch -nx -x jos.in > /dev/null
 	t1=`date +%s.%N 2>/dev/null`
 	time=`echo "scale=1; ($t1-$t0)/1" | sed 's/.N/.0/g' | bc 2>/dev/null`

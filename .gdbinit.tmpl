@@ -1,7 +1,8 @@
 set $lastcs = -1
 
-echo + symbol-file obj/kern/kernel\n
-symbol-file obj/kern/kernel
+# This fails on Darwin because the default gdb has no ELF support
+# echo + symbol-file obj/kern/kernel\n
+# symbol-file obj/kern/kernel
 
 define hook-stop
   # There doesn't seem to be a good way to detect if we're in 16- or
