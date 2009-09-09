@@ -37,7 +37,7 @@ run () {
 	t0=`date +%s.%N 2>/dev/null`
 	(
 		ulimit -t $timeout
-		$qemu -nographic $qemuopts -serial null -parallel file:jos.out -monitor null -s -S -p $port
+		$qemu -nographic $qemuopts -serial file:jos.out -monitor null -s -S -p $port
 	) >$out 2>$err &
 
 	(

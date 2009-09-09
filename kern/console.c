@@ -8,15 +8,25 @@
 
 #include <kern/console.h>
 
+static void cons_intr(int (*proc)(void));
+static void cons_putc(int c);
 
-void cons_intr(int (*proc)(void));
-
+// Stupid I/O delay routine necessitated by historical PC design flaws
+static void
+delay(void)
+{
+	inb(0x84);
+	inb(0x84);
+	inb(0x84);
+	inb(0x84);
+}
 
 /***** Serial I/O code *****/
 
 #define COM1		0x3F8
 
 #define COM_RX		0	// In:	Receive buffer (DLAB=0)
+#define COM_TX		0	// Out: Transmit buffer (DLAB=0)
 #define COM_DLL		0	// Out: Divisor Latch Low (DLAB=1)
 #define COM_DLM		1	// Out: Divisor Latch High (DLAB=1)
 #define COM_IER		1	// Out: Interrupt Enable Register
@@ -32,10 +42,12 @@ void cons_intr(int (*proc)(void));
 #define	  COM_MCR_OUT2	0x08	// Out2 complement
 #define COM_LSR		5	// In:	Line Status Register
 #define   COM_LSR_DATA	0x01	//   Data available
+#define   COM_LSR_TXRDY	0x20	//   Transmit buffer avail
+#define   COM_LSR_TSRE	0x40	//   Transmitter off
 
 static bool serial_exists;
 
-int
+static int
 serial_proc_data(void)
 {
 	if (!(inb(COM1+COM_LSR) & COM_LSR_DATA))
@@ -50,7 +62,20 @@ serial_intr(void)
 		cons_intr(serial_proc_data);
 }
 
-void
+static void
+serial_putc(int c)
+{
+	int i;
+	
+	for (i = 0;
+	     !(inb(COM1 + COM_LSR) & COM_LSR_TXRDY) && i < 12800;
+	     i++)
+		delay();
+	
+	outb(COM1 + COM_TX, c);
+}
+
+static void
 serial_init(void)
 {
 	// Turn off the FIFO
@@ -83,16 +108,6 @@ serial_init(void)
 // For information on PC parallel port programming, see the class References
 // page.
 
-// Stupid I/O delay routine necessitated by historical PC design flaws
-static void
-delay(void)
-{
-	inb(0x84);
-	inb(0x84);
-	inb(0x84);
-	inb(0x84);
-}
-
 static void
 lpt_putc(int c)
 {
@@ -114,7 +129,7 @@ static unsigned addr_6845;
 static uint16_t *crt_buf;
 static uint16_t crt_pos;
 
-void
+static void
 cga_init(void)
 {
 	volatile uint16_t *cp;
@@ -144,7 +159,7 @@ cga_init(void)
 
 
 
-void
+static void
 cga_putc(int c)
 {
 	// if no attribute given, then use black on white
@@ -351,7 +366,7 @@ kbd_intr(void)
 	cons_intr(kbd_proc_data);
 }
 
-void
+static void
 kbd_init(void)
 {
 }
@@ -373,7 +388,7 @@ static struct {
 
 // called by device interrupt routines to feed input characters
 // into the circular console input buffer.
-void
+static void
 cons_intr(int (*proc)(void))
 {
 	int c;
@@ -410,9 +425,10 @@ cons_getc(void)
 }
 
 // output a character to the console
-void
+static void
 cons_putc(int c)
 {
+	serial_putc(c);
 	lpt_putc(c);
 	cga_putc(c);
 }

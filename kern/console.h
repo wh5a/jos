@@ -18,7 +18,6 @@
 #define CRT_SIZE	(CRT_ROWS * CRT_COLS)
 
 void cons_init(void);
-void cons_putc(int c);
 int cons_getc(void);
 
 void kbd_intr(void); // irq 1
