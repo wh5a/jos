@@ -19,17 +19,17 @@ readline(const char *prompt)
 		if (c < 0) {
 			cprintf("read error: %e\n", c);
 			return NULL;
+		} else if ((c == '\b' || c == '\x7f') && i > 0) {
+			if (echoing)
+				cputchar('\b');
+			i--;
 		} else if (c >= ' ' && i < BUFLEN-1) {
 			if (echoing)
 				cputchar(c);
 			buf[i++] = c;
-		} else if (c == '\b' && i > 0) {
-			if (echoing)
-				cputchar(c);
-			i--;
 		} else if (c == '\n' || c == '\r') {
 			if (echoing)
-				cputchar(c);
+				cputchar('\n');
 			buf[i] = 0;
 			return buf;
 		}
