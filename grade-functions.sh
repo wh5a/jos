@@ -37,16 +37,13 @@ run () {
 	t0=`date +%s.%N 2>/dev/null`
 	(
 		ulimit -t $timeout
-		$qemu -nographic $qemuopts -serial file:jos.out -monitor null -no-reboot -s -S -p $port
+		exec $qemu -nographic $qemuopts -serial file:jos.out -monitor null -no-reboot -s -S -p $port
 	) >$out 2>$err &
+	PID=$!
 
 	(
 		echo "target remote localhost:$port"
-                if [ "x$qemuphys" = "x" ]; then
-		    echo "br *0x$brkaddr"
-                else
-		    echo "br *(0x$brkaddr-0xf0000000)"
-                fi
+		echo "br *0x$brkaddr"
 		echo c
 	) > jos.in
 
@@ -56,6 +53,9 @@ run () {
 	time=`echo "scale=1; ($t1-$t0)/1" | sed 's/.N/.0/g' | bc 2>/dev/null`
 	time="(${time}s)"
 	rm jos.in
+
+	# Make sure QEMU is dead.  On OS X, exiting gdb doesn't always exit QEMU.
+	kill $PID 2&>1 > /dev/null
 }
 
 # Usage: runtest <tagname> <defs> <strings...>
