@@ -55,7 +55,7 @@ run () {
 	rm jos.in
 
 	# Make sure QEMU is dead.  On OS X, exiting gdb doesn't always exit QEMU.
-	kill $PID 2&>1 > /dev/null
+	kill $PID > /dev/null 2>&1
 }
 
 # Usage: runtest <tagname> <defs> <strings...>
