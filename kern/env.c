@@ -11,6 +11,7 @@
 #include <kern/pmap.h>
 #include <kern/trap.h>
 #include <kern/monitor.h>
+#include <kern/sched.h>
 
 struct Env *envs = NULL;		// All environments
 struct Env *curenv = NULL;		// The current env
@@ -172,6 +173,15 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 	e->env_tf.tf_cs = GD_UT | 3;
 	// You will set e->env_tf.tf_eip later.
 
+	// Enable interrupts while in user mode.
+	// LAB 4: Your code here.
+
+	// Clear the page fault handler until user installs one.
+	e->env_pgfault_upcall = 0;
+
+	// Also clear the IPC receiving flag.
+	e->env_ipc_recving = 0;
+
 	// commit the allocation
 	LIST_REMOVE(e, env_link);
 	*newenv_store = e;
@@ -266,10 +276,6 @@ load_icode(struct Env *e, uint8_t *binary, size_t size)
 // before running the first user-mode environment.
 // The new env's parent ID is set to 0.
 //
-// Where does the result go? 
-// By convention, envs[0] is the first environment allocated, so
-// whoever calls env_create simply looks for the newly created
-// environment there. 
 void
 env_create(uint8_t *binary, size_t size)
 {
@@ -331,15 +337,18 @@ env_free(struct Env *e)
 
 //
 // Frees environment e.
+// If e was the current env, then runs a new environment (and does not return
+// to the caller).
 //
 void
 env_destroy(struct Env *e) 
 {
 	env_free(e);
 
-	cprintf("Destroyed the only environment - nothing more to do!\n");
-	while (1)
-		monitor(NULL);
+	if (curenv == e) {
+		curenv = NULL;
+		sched_yield();
+	}
 }
 
 

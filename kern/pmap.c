@@ -581,8 +581,9 @@ boot_map_segment(pde_t *pgdir, uintptr_t la, size_t size, physaddr_t pa, int per
 //
 // Return the page mapped at virtual address 'va'.
 // If pte_store is not zero, then we store in it the address
-// of the pte for this page.  This is used by page_remove
-// but should not be used by other callers.
+// of the pte for this page.  This is used by page_remove and
+// can be used to verify page permissions for syscall arguments,
+// but should not be used by most callers.
 //
 // Return NULL if there is no page mapped at va.
 //
@@ -624,8 +625,8 @@ void
 tlb_invalidate(pde_t *pgdir, void *va)
 {
 	// Flush the entry only if we're modifying the current address space.
-	// For now, there is only one address space, so always invalidate.
-	invlpg(va);
+	if (!curenv || curenv->env_pgdir == pgdir)
+		invlpg(va);
 }
 
 static uintptr_t user_mem_check_addr;
