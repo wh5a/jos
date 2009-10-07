@@ -70,9 +70,15 @@ runtest () {
 	$make $2 >$out
 	if [ $? -ne 0 ]
 	then
+		rm -f obj/kern/init.o
 		echo $make $2 failed 
 		exit 1
 	fi
+	# We just built a weird init.o that runs a specific test.  As
+	# a result, 'make qemu' will run the last graded test and
+	# 'make clean; make qemu' will run the user-specified
+	# environment.  Remove our weird init.o to fix this.
+	rm -f obj/kern/init.o
 	run
 	if [ ! -s jos.out ]
 	then
