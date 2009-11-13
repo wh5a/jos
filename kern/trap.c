@@ -11,6 +11,8 @@
 #include <kern/sched.h>
 #include <kern/kclock.h>
 #include <kern/picirq.h>
+#include <kern/time.h>
+#include <kern/e100.h>
 
 static struct Taskstate ts;
 
@@ -119,6 +121,9 @@ trap_dispatch(struct Trapframe *tf)
 	
 	// Handle clock interrupts.
 	// LAB 4: Your code here.
+
+	// Add time tick increment to clock interrupts.
+	// LAB 6: Your code here.
 
 	// Handle spurious interupts
 	// The hardware sometimes raises these because of noise on the

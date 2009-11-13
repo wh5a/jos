@@ -173,7 +173,7 @@ fmap(struct Fd* fd, off_t oldsize, off_t newsize)
 
 // Unmap any file pages that no longer represent valid file pages
 // when the size of the file as mapped in our address space decreases.
-// Harmlessly does nothing if newsize >= oldsize.  Don't do anything
+// Harmlessly does nothing if newsize >= oldsize.
 //
 // Hint: Remember to call fsipc_dirty if dirty is true and PTE_D bit
 // is set in the pagetable entry.
