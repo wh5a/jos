@@ -42,6 +42,7 @@ KERN_SRCFILES := $(wildcard $(KERN_SRCFILES))
 KERN_BINFILES :=	user/idle \
 			user/pingpong \
 			user/primes \
+			user/faultregs \
 			user/writemotd \
 			user/icode \
 			user/testtime \
