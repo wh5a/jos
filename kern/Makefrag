@@ -39,6 +39,7 @@ KERN_BINFILES :=	user/idle \
 			user/forktree \
 			user/pingpong \
 			user/primes \
+			user/faultregs \
 			user/testfsipc \
 			user/writemotd \
 			user/icode \
