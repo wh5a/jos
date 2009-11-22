@@ -32,6 +32,7 @@
 // Hardware IRQ numbers. We receive these as (IRQ_OFFSET+IRQ_WHATEVER)
 #define IRQ_TIMER        0
 #define IRQ_KBD          1
+#define IRQ_SERIAL       4
 #define IRQ_SPURIOUS     7
 #define IRQ_IDE         14
 #define IRQ_ERROR       19
