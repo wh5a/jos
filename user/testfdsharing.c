@@ -1,3 +1,4 @@
+#include <inc/x86.h>
 #include <inc/lib.h>
 
 char buf[512], buf2[512];
@@ -61,4 +62,6 @@ umain(void)
 		cprintf("write to file data page succeeded\n");
 	else
 		cprintf("write to file data page failed; got %s\n", buf);
+
+	breakpoint();
 }

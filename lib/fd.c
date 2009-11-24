@@ -183,8 +183,6 @@ dup(int oldfdnum, int newfdnum)
 	ova = fd2data(oldfd);
 	nva = fd2data(newfd);
 
-	if ((r = sys_page_map(0, oldfd, 0, newfd, vpt[VPN(oldfd)] & PTE_USER)) < 0)
-		goto err;
 	if (vpd[PDX(ova)]) {
 		for (i = 0; i < PTSIZE; i += PGSIZE) {
 			pte = vpt[VPN(ova + i)];
@@ -195,6 +193,8 @@ dup(int oldfdnum, int newfdnum)
 			}
 		}
 	}
+	if ((r = sys_page_map(0, oldfd, 0, newfd, vpt[VPN(oldfd)] & PTE_USER)) < 0)
+		goto err;
 
 	return newfdnum;
 
