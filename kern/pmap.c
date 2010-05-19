@@ -106,6 +106,7 @@ static void*
 boot_alloc(uint32_t n, uint32_t align)
 {
 	extern char end[];
+        uint32_t i;
 	void *v;
 
 	// Initialize boot_freemem if this is the first time.
@@ -116,13 +117,24 @@ boot_alloc(uint32_t n, uint32_t align)
 	if (boot_freemem == 0)
 		boot_freemem = end;
 
-	// LAB 2: Your code here:
 	//	Step 1: round boot_freemem up to be aligned properly
+        i = (uint32_t) boot_freemem;
+        i &= align - 1;
+        if (i)
+          boot_freemem += align - i;
 	//	Step 2: save current value of boot_freemem as allocated chunk
+        v = boot_freemem;
 	//	Step 3: increase boot_freemem to record allocation
+        boot_freemem += n;
 	//	Step 4: return allocated chunk
-
-	return NULL;
+        if (PADDR(boot_freemem) > maxpa) {
+          panic("boot_alloc: Out of physical memory.\n");
+          return NULL;
+        }
+        else {
+          cprintf("boot_alloc: Allocated %u bytes at %p\n", n, v);
+          return v;
+        }
 }
 
 // Set up a two-level page table:
@@ -143,9 +155,6 @@ i386_vm_init(void)
 	pde_t* pgdir;
 	uint32_t cr0;
 	size_t n;
-
-	// Delete this line:
-	panic("i386_vm_init: This function is not finished\n");
 
 	//////////////////////////////////////////////////////////////////////
 	// create initial page directory.
@@ -172,9 +181,7 @@ i386_vm_init(void)
 	// The kernel uses this structure to keep track of physical pages;
 	// 'npage' equals the number of physical pages in memory.  User-level
 	// programs will get read-only access to the array as well.
-	// You must allocate the array yourself.
-	// Your code goes here: 
-
+	pages = boot_alloc(npage * sizeof (struct Page), 1);
 
 	//////////////////////////////////////////////////////////////////////
 	// Now that we've allocated the initial kernel data structures, we set
@@ -416,22 +423,23 @@ check_va2pa(pde_t *pgdir, uintptr_t va)
 void
 page_init(void)
 {
-	// The example code here marks all pages as free.
-	// However this is not truly the case.  What memory is free?
+	int i;
+	LIST_INIT(&page_free_list);
 	//  1) Mark page 0 as in use.
 	//     This way we preserve the real-mode IDT and BIOS structures
 	//     in case we ever need them.  (Currently we don't, but...)
 	//  2) Mark the rest of base memory as free.
+	for (i = 1; i < IOPHYSMEM >> PGSHIFT; i++) {
+		pages[i].pp_ref = 0;
+		LIST_INSERT_HEAD(&page_free_list, &pages[i], pp_link);
+	}
 	//  3) Then comes the IO hole [IOPHYSMEM, EXTPHYSMEM).
 	//     Mark it as in use so that it can never be allocated.      
 	//  4) Then extended memory [EXTPHYSMEM, ...).
-	//     Some of it is in use, some is free. Where is the kernel?
-	//     Which pages are used for page tables and other data structures?
-	//
-	// Change the code to reflect this.
-	int i;
-	LIST_INIT(&page_free_list);
-	for (i = 0; i < npage; i++) {
+	//     Kernel is located from EXTPHYSMEM to boot_freemem
+        // Round boot_freemem up to be page aligned properly
+        boot_alloc(0, PGSIZE);
+	for (i = PADDR(boot_freemem) >> PGSHIFT; i < npage; i++) {
 		pages[i].pp_ref = 0;
 		LIST_INSERT_HEAD(&page_free_list, &pages[i], pp_link);
 	}
@@ -460,13 +468,18 @@ page_initpp(struct Page *pp)
 //   0 -- on success
 //   -E_NO_MEM -- otherwise 
 //
-// Hint: use LIST_FIRST, LIST_REMOVE, and page_initpp
 // Hint: pp_ref should not be incremented 
 int
 page_alloc(struct Page **pp_store)
 {
-	// Fill this function in
-	return -E_NO_MEM;
+  struct Page *p = LIST_FIRST(&page_free_list);
+  if (LIST_EMPTY(&page_free_list))
+    return -E_NO_MEM;
+
+  LIST_REMOVE(p, pp_link);
+  page_initpp(p);
+  *pp_store = p;
+  return 0;
 }
 
 //
@@ -476,7 +489,7 @@ page_alloc(struct Page **pp_store)
 void
 page_free(struct Page *pp)
 {
-	// Fill this function in
+  LIST_INSERT_HEAD(&page_free_list, pp, pp_link);
 }
 
 //
@@ -767,4 +780,3 @@ page_check(void)
 	
 	cprintf("page_check() succeeded!\n");
 }
-
