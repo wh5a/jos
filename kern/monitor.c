@@ -24,6 +24,7 @@ struct Command {
 static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
+	{ "backtrace", "Display backtrace", mon_backtrace },
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -59,8 +60,23 @@ mon_kerninfo(int argc, char **argv, struct Trapframe *tf)
 int
 mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 {
-	// Your code here.
-	return 0;
+  uint32_t ebp = read_ebp(), *ebpp, eip, i;
+  struct Eipdebuginfo dbg;
+  while (ebp > 0) {
+    ebpp = (uint32_t *)ebp;
+    eip = ebpp[1];
+    cprintf("ebp %x eip %x args", ebp, eip);
+    for (i = 2; i < 6; i++) {
+      cprintf(" %08x", ebpp[i]);
+    }
+    debuginfo_eip(eip, &dbg);
+    cprintf("\n\t%s:%d: ", dbg.eip_file, dbg.eip_line);
+    for (i = 0; i < dbg.eip_fn_namelen; i++)
+      cputchar(dbg.eip_fn_name[i]);
+    cprintf("+%d\n", eip - dbg.eip_fn_addr);
+    ebp = *ebpp;
+  }
+  return 0;
 }
 
 
