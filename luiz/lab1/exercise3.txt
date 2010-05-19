@@ -1,0 +1,57 @@
+Exercise 3
+----------
+
+Q1: Use the Bochs debugger to trace into the ROM BIOS for a few more
+instructions, and try to guess what it might be doing.
+
+(0) [0xfffffff0] f000:fff0 (unk. ctxt): jmp far f000:e05b         ; ea5be000f0
+
+ Jumps to 0x000fe05b. When the computer is powered on, the IP register is set
+to the end of the BIOS code (0x000ffff0), so the first thing the BIOS does is
+to 'jump back', so that it can use more space for its code.
+
+(0) [0x000fe05b] f000:e05b (unk. ctxt): xor ax, ax                ; 31c0
+
+ A XOR operation with equals numbers always results in 0, then this
+instruction stores 0 in AX.
+
+ The XOR is used because its resulting opcode is smaller than the MOV
+version.
+
+(0) [0x000fe05d] f000:e05d (unk. ctxt): out 0x0d, al              ; e60d
+
+ Issues a Master Clear operation in the first DMA controller.
+
+ Has the same effect of a hardware reset, several registers are reseted and
+the chip enters in idle cycle.
+
+ Notice that the Master Clear operation is activated by the I/O operatation
+itself, ie, doesn't matter what value you store in the register.
+
+(0) [0x000fe05f] f000:e05f (unk. ctxt): out 0xda, al              ; e6da
+
+  Master Clear in the second DMA controller.
+
+(0) [0x000fe061] f000:e061 (unk. ctxt): mov al, 0xc0              ; b0c0
+(0) [0x000fe063] f000:e063 (unk. ctxt): out 0xd6, al              ; e6d6
+
+ Write 11000000 in the second DMA controller's mode register, this operation
+has the following effects: cascade mode, address increment select,
+autoinitialisation disable, verify operation, channel 4 select.
+
+(0) [0x000fe065] f000:e065 (unk. ctxt): mov al, 0x00              ; b000
+(0) [0x000fe067] f000:e067 (unk. ctxt): out 0xd4, al              ; e6d4
+
+ Write 00000000 in the single mask register, this operation has the following
+effects: channel 4 select and clears the master bit.
+
+(0) [0x000fe069] f000:e069 (unk. ctxt): mov al, 0x0f              ; b00f
+(0) [0x000fe06b] f000:e06b (unk. ctxt): out 0x70, al              ; e670
+
+ Write 00001111 in the CMOS RAM index register port, this operation has the
+following effects: enables NMI and writes 0001111 in the index.
+
+(0) [0x000fe06d] f000:e06d (unk. ctxt): in al, 0x71               ; e471
+(0) [0x000fe06f] f000:e06f (unk. ctxt): mov bl, al                ; 88c3
+
+ Read the current second (as a BCD value) in AL, and copy the result into BL.

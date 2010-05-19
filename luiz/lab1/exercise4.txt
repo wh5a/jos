@@ -1,0 +1,116 @@
+Exercise 4
+----------
+
+Q1: Identify the exact assembly instructions that correspond to each of the
+statements in readsect().
+
+-> Bochs command to disassemble the readsect() function:
+
+	u /48 0x00007c81
+
+  (will only work after the boot loader code has been loaded by the BIOS)
+
+-> Important notes
+
+ 1. GCC inlines waitdisk()
+ 2. outb() and insl() are inline functions, defined in inc/x86.h
+ 3. GCC does a number of optimizations in this code. For instance, readsect()
+    parameters are loaded in the CPU's registers ('offset' in ECX and 'dst'
+    in EDI); the most significant bits of outb()'s 'port' is loaded only once,
+    for all the operations.
+
+waitdisk():
+00007c8b: (                    ): mov edx, 0x000001f7       ; baf7010000
+00007c90: (                    ): in al, dx                 ; ec
+00007c91: (                    ): and eax, 0x000000c0       ; 25c0000000
+00007c96: (                    ): cmp eax, 0x00000040       ; 83f840
+00007c99: (                    ): jnz .+0xfffffff0          ; 75f0
+
+outb(0x1F2, 1);         // count = 1
+00007c9b: (                    ): mov al, 0x01              ; b001
+00007c9d: (                    ): mov dl, 0xf2              ; b2f2
+00007c9f: (                    ): out dx, al                ; ee
+
+outb(0x1F3, offset);
+00007ca0: (                    ): movzx eax, cl             ; 0fb6c1
+00007ca3: (                    ): mov dl, 0xf3              ; b2f3
+00007ca5: (                    ): out dx, al                ; ee
+
+outb(0x1F4, offset >> 8);
+00007ca6: (                    ): movzx eax, ch             ; 0fb6c5
+00007ca9: (                    ): mov dl, 0xf4              ; b2f4
+00007cab: (                    ): out dx, al                ; ee
+
+outb(0x1F5, offset >> 16);
+00007cac: (                    ): shr ecx, 0x10             ; c1e910
+00007caf: (                    ): mov dl, 0xf5              ; b2f5
+00007cb1: (                    ): movzx eax, cl             ; 0fb6c1
+00007cb4: (                    ): out dx, al                ; ee
+
+outb(0x1F6, (offset >> 24) | 0xE0);
+00007cb5: (                    ): shr ecx, 0x08             ; c1e908
+00007cb8: (                    ): mov dl, 0xf6              ; b2f6
+00007cba: (                    ): or cl, 0xe0               ; 80c9e0
+00007cbd: (                    ): mov al, cl                ; 88c8
+00007cbf: (                    ): out dx, al                ; ee
+
+outb(0x1F7, 0x20);      // cmd 0x20 - read sectors
+00007cc0: (                    ): mov al, 0x20              ; b020
+00007cc2: (                    ): mov dl, 0xf7              ; b2f7
+00007cc4: (                    ): out dx, al                ; ee
+
+waitdisk():
+00007cc5: (                    ): mov edx, 0x000001f7       ; baf7010000
+00007cca: (                    ): in al, dx                 ; ec
+00007ccb: (                    ): and eax, 0x000000c0       ; 25c0000000
+00007cd0: (                    ): cmp eax, 0x00000040       ; 83f840
+00007cd3: (                    ): jnz .+0xfffffff0          ; 75f0
+
+insl(0x1F0, dst, SECTSIZE/4);
+00007cd5: (                    ): mov dl, 0xf0              ; b2f0
+00007cd7: (                    ): mov ecx, 0x00000080       ; b980000000
+00007cdc: (                    ): cld                       ; fc
+00007cdd: (                    ): repne insd dword ptr es:[edi], dx ; f26d
+
+
+Q2: Trace through the rest of readsect() and back out into cmain(),
+and identify the begin and end of the for loop that reads the remaining
+sectors of the kernel from the disk.
+
+start (jumps to the loop's test)
+00007d63: (                    ): jmp .+0x00000014          ; eb14
+
+end (loop's test, also its last instruction)
+00007d7b: (                    ): jb .+0xffffffe8           ; 72e8
+
+
+Q3: Find out what code will run when the loop is finished, set a breakpoint
+there, and continue to that breakpoint.
+
+Address: 0x0010000c
+
+
+Q4: At exactly what point does the processor transition from executing 16-bit
+code to executing 32-bit code?
+
+At boot.S:75. After executing the ljmp instruction the processor will be
+executing in 32-bit code.
+
+Q5: What is the last instruction of the boot loader executed, and what is the
+first instruction of the kernel it just loaded?
+
+boot loader last instruction:
+00007d87: (                    ): call eax                  ; ffd0
+
+first kernel instruction:
+(0) [0x0010000c] 0008:0010000c (unk. ctxt): mov word ptr ds:0x472, 0x1234 ; 66c705720400003412
+
+Q6: How does the boot loader decide how many sectors it must read in order to
+fetch the entire kernel from disk? Where does it find this information?
+
+The boot loader finds that information in the kernel file itself. As the kernel
+file is an ELF file, it has an ELF header which describes everything that the
+boot loader must to know.
+
+Thus, the boot loader firstly loads the kernel file's header into memory and
+then consult the appropriate members to learn the kernel's size.

@@ -1,0 +1,28 @@
+Exercise 9
+----------
+
+Q1: Explain the interface between printf.c and console.c. Specifically, what
+function does console.c export? How is this function used by printf.c?
+
+ printf.c defines the high-level printing functions used by the kernel, while
+console.c defines low-level functions used to perform some kinds of console
+I/O, like keyboard input support, serial I/O, parellel port and display
+output.
+
+ The function exported by console.c which is used by printf.c is cputchar(),
+that function prints a character in the parellel port and in the display.
+
+ Kernel's cprintf() function calls vprintfmt() (from lib/printfmt.c) to
+actually print in the console, vprintfmt() does the needed formatting and
+then call a function passed to it to actually print in the display.
+
+ The function that cprintf() passes to vprintfmt() to print in the display
+is cputchar().
+
+Q2: Explain the following from console.c
+
+ When the console buffer is full, it means that the display screen is
+also full, i.e, all its lines are filled.
+
+ Then, in order to print a new line, the screen must 'scrow down' one
+line. That's what this code does.

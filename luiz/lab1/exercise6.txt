@@ -1,0 +1,18 @@
+Exercise 6
+----------
+
+Q1: Reset the machine (exit bochs and start it again). Examine the 8 words of memory at
+0x00100000 at the point the BIOS enters the boot loader, and then again at the point
+the boot loader enters the kernel. Why are they different? What is there at the second
+breakpoint? (You do not really need to use Bochs to answer this question. Just think.)
+
+-> Before:
+
+0x00100000 <bogus+       0>:    0x00000000
+
+-> After:
+
+0x00100000 <bogus+       0>:    0x1badb002      0x00000003      0xe4524ffb      0x7205c766
+0x00100010 <bogus+      16>:    0x34000004      0x15010f12      0x0010f018      0x000010b8
+
+ That address is loaded with kernel code by the boot loader.

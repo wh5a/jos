@@ -1,0 +1,41 @@
+Exercise 11:
+------------
+
+Q1: How many 32-bit words does each recursive nesting level of test_backtrace
+push on the stack, and what are those words?
+
+ Not sure whether I should consider all the stack usage done by test_backtrace()
+or if I should only consider the portion of the code that is executed before
+a recursive call (0xf01000dd-0xf0100101) is made. Will choose the latter.
+
+ Each recursive nesting level of test_backtrace() pushes 7 32-bits words in
+the stack, as follows:
+
+1. (0) [0x001000dd] 0008:f01000dd (unk. ctxt): push ebp                  ; 55
+
+  -> Saves EBP's contents in the stack
+
+2. (0) [0x001000e0] 0008:f01000e0 (unk. ctxt): push ebx                  ; 53
+
+  -> Saves EBX's contents in the stack
+
+3. (0) [0x001000e7] 0008:f01000e7 (unk. ctxt): mov dword ptr ss:[esp+0x4], ebx ; 895c2404
+
+  -> Puts EBX's contents (0x5) into the stack (parameter to cprintf())
+
+4. (0) [0x001000eb] 0008:f01000eb (unk. ctxt): mov dword ptr ss:[esp], 0xf0101712 ; c70424121710f0
+
+  -> Puts 0xf0101712 into the stack (string parameter to cprintf())
+
+5. (0) [0x001000f2] 0008:f01000f2 (unk. ctxt): call .+0x00000858 (0x0010094f) ; e858080000
+
+  -> Puts 0xf01000f7 into the stack, call's return address
+
+6. (0) [0x001000fe] 0008:f01000fe (unk. ctxt): mov dword ptr ss:[esp], eax ; 890424
+
+  -> Puts EAX's contents (x-1) into the stack (parameter to test_backtrace()
+     recursive call)
+
+7. (0) [0x00100101] 0008:f0100101 (unk. ctxt): call .+0xffffffd7 (0x001000dd) ; e8d7ffffff
+
+  -> Puts 0xf0100106 into the stack, call's return address

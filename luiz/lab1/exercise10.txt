@@ -1,0 +1,17 @@
+Exercise 10
+-----------
+
+Q1: Determine where the kernel initializes its stack, and exactly where in
+memory its stack is located. How does the kernel reserve space for its stack?
+And at which "end" of this reserved area is the stack pointer initialized to
+point to?
+
+ The kernel initializes its stack at line 64 of kern/entry.S file and the
+stack's top is located at address 0x0010F000 in physical memory.
+
+ The kernel reserves space for its stack by using the GNU assembler's
+directive .space. It reserves 32768 bytes, starting at 0x00107000 and
+ending at 0x0010F000.
+
+ As the stack grows down in the x86 processor, the stack pointer is
+initialized to point to the "top end" of the stack buffer.
