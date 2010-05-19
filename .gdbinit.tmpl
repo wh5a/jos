@@ -1,9 +1,5 @@
 set $lastcs = -1
 
-# This fails on Darwin because the default gdb has no ELF support
-# echo + symbol-file obj/kern/kernel\n
-# symbol-file obj/kern/kernel
-
 define hook-stop
   # There doesn't seem to be a good way to detect if we're in 16- or
   # 32-bit mode, but we always run with CS == 8 in 32-bit mode.
@@ -25,3 +21,10 @@ end
 
 echo + target remote localhost:1234\n
 target remote localhost:1234
+
+# If this fails, it's probably because your GDB doesn't support ELF.
+# Look at the tools page at
+#  http://pdos.csail.mit.edu/6.828/2009/tools.html
+# for instructions on building GDB with ELF support.
+echo + symbol-file obj/kern/kernel\n
+symbol-file obj/kern/kernel

@@ -74,7 +74,7 @@
 // Only flags in PTE_USER may be used in system calls.
 #define PTE_USER	(PTE_AVAIL | PTE_P | PTE_W | PTE_U)
 
-// address in page table entry
+// Address in page table or page directory entry
 #define PTE_ADDR(pte)	((physaddr_t) (pte) & ~0xFFF)
 
 // Control Register flags
