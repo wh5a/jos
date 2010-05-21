@@ -1,7 +1,6 @@
 #!/bin/sh
 
 qemuopts="-hda obj/kern/kernel.img"
-qemuphys=1
 . ./grade-functions.sh
 
 

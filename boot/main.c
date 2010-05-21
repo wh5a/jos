@@ -23,7 +23,7 @@
  *  * Assuming this boot loader is stored in the first sector of the
  *    hard-drive, this code takes over...
  *
- *  * control starts in bootloader.S -- which sets up protected mode,
+ *  * control starts in boot.S -- which sets up protected mode,
  *    and a stack so C code then run, then calls bootmain()
  *
  *  * bootmain() in this file takes over, reads in the kernel and jumps to it.
