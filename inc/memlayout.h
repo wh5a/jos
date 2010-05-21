@@ -19,7 +19,8 @@
 #define GD_UD     0x20     // user data
 #define GD_TSS    0x28     // Task segment selector
 
-/*
+/* http://pdos.csail.mit.edu/6.828/2009/lec/jos_layout.pdf
+ *
  * Virtual memory map:                                Permissions
  *                                                    kernel/user
  *

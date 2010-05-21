@@ -21,7 +21,7 @@ physaddr_t boot_cr3;		// Physical address of boot time page directory
 static char* boot_freemem;	// Pointer to next byte of free mem
 
 struct Page* pages;		// Virtual address of physical page array
-static struct Page_list page_free_list;	// Free list of physical pages
+struct Page_list page_free_list;	// Free list of physical pages
 
 // Global descriptor table.
 //
@@ -152,6 +152,15 @@ i386_vm_init(void)
 	pde_t* pgdir;
 	uint32_t cr0;
 	size_t n;
+
+        // Check for Page Size Extension support.
+	uint32_t edx = 0;
+	const uint32_t pse_bit = 0x8;
+	cpuid(1, NULL, NULL, NULL, &edx);
+	if (edx & pse_bit)
+          cprintf("4M page is supported!\n");
+        else
+          cprintf("Only 4K page is supported.\n");
 
 	//////////////////////////////////////////////////////////////////////
 	// create initial page directory.

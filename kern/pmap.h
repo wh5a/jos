@@ -87,5 +87,6 @@ page2kva(struct Page *pp)
 }
 
 pte_t *pgdir_walk(pde_t *pgdir, const void *va, int create);
+extern struct Page_list page_free_list;
 
 #endif /* !JOS_KERN_PMAP_H */
