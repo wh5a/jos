@@ -118,10 +118,7 @@ boot_alloc(uint32_t n, uint32_t align)
 		boot_freemem = end;
 
 	//	Step 1: round boot_freemem up to be aligned properly
-        i = (uint32_t) boot_freemem;
-        i &= align - 1;
-        if (i)
-          boot_freemem += align - i;
+        boot_freemem = ROUNDUP(boot_freemem, PGSIZE);
 	//	Step 2: save current value of boot_freemem as allocated chunk
         v = boot_freemem;
 	//	Step 3: increase boot_freemem to record allocation
@@ -181,8 +178,9 @@ i386_vm_init(void)
 	// The kernel uses this structure to keep track of physical pages;
 	// 'npage' equals the number of physical pages in memory.  User-level
 	// programs will get read-only access to the array as well.
-	pages = boot_alloc(npage * sizeof (struct Page), PGSIZE);
-
+        size_t sizeof_pages = ROUNDUP(npage * sizeof (struct Page), PGSIZE);
+	pages = boot_alloc(sizeof_pages, PGSIZE);
+        
 	//////////////////////////////////////////////////////////////////////
 	// Now that we've allocated the initial kernel data structures, we set
 	// up the list of free physical pages. Once we've done so, all further
@@ -203,8 +201,9 @@ i386_vm_init(void)
 	//    - the new image at UPAGES -- kernel R, user R
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
-	// Your code goes here:
-
+        boot_map_segment(boot_pgdir, UPAGES, sizeof_pages, PADDR(pages), PTE_U);
+        boot_map_segment(boot_pgdir, (uintptr_t) pages, sizeof_pages, PADDR(pages), PTE_W);
+        
 	//////////////////////////////////////////////////////////////////////
         // Use the physical memory that bootstack refers to as
         // the kernel stack.  The complete VA
@@ -213,7 +212,8 @@ i386_vm_init(void)
 	//     * [KSTACKTOP-KSTKSIZE, KSTACKTOP) -- backed by physical memory
 	//     * [KSTACKTOP-PTSIZE, KSTACKTOP-KSTKSIZE) -- not backed => faults
 	//     Permissions: kernel RW, user NONE
-	// Your code goes here:
+        boot_map_segment(boot_pgdir, KSTACKTOP-KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_W);
+        // What's the point of this invalid memory region??
 
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE. 
@@ -222,7 +222,7 @@ i386_vm_init(void)
 	// We might not have 2^32 - KERNBASE bytes of physical memory, but
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
-	// Your code goes here: 
+        boot_map_segment(boot_pgdir, KERNBASE, 0xffffffff - KERNBASE + 1, 0, PTE_W); // Using 2^32 directly overflows
 
 	// Check that the initial page directory has been set up correctly.
 	check_boot_pgdir();
@@ -437,8 +437,7 @@ page_init(void)
 	//     Mark it as in use so that it can never be allocated.      
 	//  4) Then extended memory [EXTPHYSMEM, ...).
 	//     Kernel is located from EXTPHYSMEM to boot_freemem
-        // Round boot_freemem up to be page aligned properly
-        boot_alloc(0, PGSIZE);
+        boot_freemem = ROUNDUP(boot_freemem, PGSIZE);
 	for (i = PADDR(boot_freemem) >> PGSHIFT; i < npage; i++) {
 		pages[i].pp_ref = 0;
 		LIST_INSERT_HEAD(&page_free_list, &pages[i], pp_link);
@@ -571,7 +570,8 @@ page_insert(pde_t *pgdir, struct Page *pp, void *va, int perm)
 
 //   - If there is already a page mapped at 'va', it should be page_remove()d.
 //   - The TLB must be invalidated if a page was formerly present at 'va'.
-  if (pte)
+  if (pte && (*pte & PTE_P))
+    // The page table is recorded in the page directory, and the page is present
     page_remove(pgdir, va);
 
 //   - If necessary, on demand, a page table should be allocated and inserted
