@@ -1,0 +1,49 @@
+Exercise 5
+==========
+
+In the file kern/pmap.c, you must implement code for the five functions:
+page_init(), page_alloc(), page_free(), pgdir_walk(), page_insert(),
+page_remove()
+
+Finished implementation at commit: 43d859f92b33cf4cedf59fd041407a3d376efb9c
+
+Q1: What is the maximum amount of physical memory that this operating
+system can support? Why?
+
+ This operating system can support up to 256MB of memory. The reason for
+this limitation is that we have mapped the kernel between the range
+0xF0000000 and 0xFFFFFFFF (which is 256MB long) so, there's no way to
+reference addresses greater than 4GB w/o using special hardware
+capabilities.
+
+ To use more than 256MB, we should map the kernel below the current base
+address of 0xF0000000.
+
+Q2: How much space overhead is there for managing memory, if we actually
+had the maximum amount of physical memory? How is this overhead broken down?
+
+ The total overhead to manage maxium amount of physical memory is:
+
+	786432 bytes (struct Pages [1])
+	  4096 bytes (one page directory [2])
+	262144 bytes (64 page tables [3])
+	------------
+	1052672 bytes (~1MB)
+
+ The only way I can see to reduce that amount is to use 4MB pages, this
+would reduce the struct Page allocations to 768 bytes and no need to
+allocate page tables.
+
+ On the hand, the greater the granularity the greater the amount of
+unused chunks we'll have on the allocated pages which means we'll
+spend memory...
+
+[1] struct Page overhead was calculated this way
+	256 * 1024 * 1024  /   4096   *      12
+	     256MB          Page size   size of struct Page
+
+[2] Page directory is 4096 bytes long by definition
+
+[3] Page table overhead was calculated this way
+	(256 * 1024 * 1024   /  (4096 * 1024))   *   4096
+              256MB              PG maps 4MB        PG size
