@@ -53,12 +53,15 @@ static const char *trapname(int trapno)
 }
 
 
+extern uint32_t vectors[];  // in trapentry.S: array of 256 entry pointers
 void
 idt_init(void)
 {
 	extern struct Segdesc gdt[];
-	
-	// LAB 3: Your code here.
+
+        int i = 0;
+        for (; i < 256; i++)
+          SETGATE(idt[i], 0, GD_KT, vectors[i], 0);
 
 	// Setup a TSS so that we get the right stack
 	// when we trap to the kernel.
