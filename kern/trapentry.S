@@ -572,7 +572,7 @@ _alltraps:
   # pushl %esp to pass a pointer to the Trapframe as an argument to trap()
   pushl %esp
   call trap
-  # MY theory: trap() may return if this interrupt causes a context switch, and later the current process is scheduled to run again
+  # trap() may return if it decides to kill the current process
 
   # Clean up the stack setup for previous trap() call and prepare for iret
   addl $4, %esp       # skip the argument we passed on stack to trap()
