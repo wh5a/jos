@@ -35,7 +35,7 @@ i386_init(void)
 	// Lab 3 user environment initialization functions
 	env_init();
 	idt_init();
-
+        // enable_sep();
 
 	// Temporary test code specific to LAB 3
 #if defined(TEST)

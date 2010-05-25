@@ -198,6 +198,14 @@ trap(struct Trapframe *tf)
 
 
 void
+enable_sep(void)
+{
+	wrmsr(0x174, GD_KT, 0);             /* SYSENTER_CS_MSR */
+	wrmsr(0x175, KSTACKTOP, 0);         /* SYSENTER_ESP_MSR */
+	wrmsr(0x176, (uint32_t) sysenter_handler, 0);  /* SYSENTER_EIP_MSR */
+}
+
+void
 page_fault_handler(struct Trapframe *tf)
 {
 	uint32_t fault_va;

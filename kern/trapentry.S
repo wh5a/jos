@@ -580,3 +580,20 @@ _alltraps:
   popl %ds
   addl $8, %esp       # skip trapno and errcode
   iret
+
+
+.globl sysenter_handler
+.type sysenter_handler, @function
+.align 2
+sysenter_handler:
+	pushl $0x0 /* parameters to syscall */
+	pushl %edi
+	pushl %ebx
+	pushl %ecx
+	pushl %edx
+	pushl %eax
+	call syscall
+	addl $0x18, %esp /* kill all the parameters */
+	movl %esi, %edx
+	movl %ebp, %ecx
+	sysexit

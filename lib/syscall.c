@@ -37,6 +37,32 @@ syscall(int num, int check, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 	return ret;
 }
 
+/* NOTE: This mechanism isn't enabled due to conflicts with later labs claimed by Luiz */
+static uint32_t
+syscall_sysenter(int num, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
+{
+	uint32_t ret;
+
+	asm volatile(
+		"pushl %%esi\n\t"
+		"leal after_sysenter, %%esi\n\t"
+		"pushl %%ebp\n\t"
+		"movl %%esp, %%ebp\n\t"
+		"sysenter\n\t"
+		"after_sysenter:"
+		: "=a" (ret)
+		: "a" (num),
+		  "d" (a1),
+		  "c" (a2),
+		  "b" (a3),
+		  "D" (a4)
+		: "cc", "memory");
+
+	asm volatile("popl %%ebp\n\t"
+		     "popl %%esi" ::);
+	return ret;
+}
+
 void
 sys_cputs(const char *s, size_t len)
 {
