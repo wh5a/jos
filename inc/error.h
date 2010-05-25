@@ -13,6 +13,9 @@
 				// the maximum allowed
 #define E_FAULT		6	// Memory fault
 
-#define	MAXERROR	6
+#define E_IPC_NOT_RECV	7	// Attempt to send to env that is not recving
+#define E_EOF		8	// Unexpected end of file
+
+#define MAXERROR	8
 
 #endif	// !JOS_INC_ERROR_H */

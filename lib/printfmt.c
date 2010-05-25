@@ -27,6 +27,8 @@ static const char * const error_string[MAXERROR + 1] =
 	"out of memory",
 	"out of environments",
 	"segmentation fault",
+	"env is not recving",
+	"unexpected end of file",
 };
 
 /*
