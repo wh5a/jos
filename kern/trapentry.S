@@ -572,7 +572,6 @@ _alltraps:
   # pushl %esp to pass a pointer to the Trapframe as an argument to trap()
   pushl %esp
   call trap
-  # trap() may return if it decides to kill the current process
 
   # Clean up the stack setup for previous trap() call and prepare for iret
   addl $4, %esp       # skip the argument we passed on stack to trap()

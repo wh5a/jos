@@ -67,6 +67,7 @@ idt_init(void)
           switch (i) {
           /* Enable "int 3" for user space */
           case T_BRKPT:
+          case T_SYSCALL:
             SETGATE(idt[i], 0, GD_KT, vectors[i], DPL_USER);
             break;
           default:
@@ -132,16 +133,22 @@ trap_dispatch(struct Trapframe *tf)
   case T_DEBUG:
     monitor_ss(tf);
     return;
+  case T_SYSCALL:
+    {
+      struct PushRegs *regs = &tf->tf_regs;
+      int ret = syscall(regs->reg_eax, regs->reg_edx, regs->reg_ecx,
+                        regs->reg_ebx, regs->reg_edi, regs->reg_esi);
+      regs->reg_eax = ret;
+    }
+    return;
     
   default:
     // Unexpected trap: The user process or the kernel has a bug.
     print_trapframe(tf);
     if (tf->tf_cs == GD_KT)
       panic("unhandled trap in kernel");
-    else {
+    else
       env_destroy(curenv);
-      return;
-    }
   }
 }
 
@@ -209,4 +216,3 @@ page_fault_handler(struct Trapframe *tf)
 	print_trapframe(tf);
 	env_destroy(curenv);
 }
-
