@@ -635,6 +635,7 @@ boot_map_segment(pde_t *pgdir, uintptr_t la, size_t size, physaddr_t pa, int per
   for (i = 0; i < size; i += PGSIZE) {
     pte_t *pte = pgdir_walk(pgdir, (void *)la + i, 1);
     *pte = (pa+i) | perm | PTE_P;
+    pgdir[PDX(la + i)] |= perm;
   }
 }
 
