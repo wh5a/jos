@@ -27,6 +27,8 @@ static __inline void lcr3(uint32_t val) __attribute__((always_inline));
 static __inline uint32_t rcr3(void) __attribute__((always_inline));
 static __inline void lcr4(uint32_t val) __attribute__((always_inline));
 static __inline uint32_t rcr4(void) __attribute__((always_inline));
+static __inline void ldr6(uint32_t val) __attribute__((always_inline));
+static __inline uint32_t rdr6(void) __attribute__((always_inline));
 static __inline void tlbflush(void) __attribute__((always_inline));
 static __inline uint32_t read_eflags(void) __attribute__((always_inline));
 static __inline void write_eflags(uint32_t eflags) __attribute__((always_inline));
@@ -209,6 +211,20 @@ rcr4(void)
 	uint32_t cr4;
 	__asm __volatile("movl %%cr4,%0" : "=r" (cr4));
 	return cr4;
+}
+
+static __inline void
+ldr6(uint32_t val)
+{
+	__asm __volatile("movl %0,%%dr6" : : "r" (val));
+}
+
+static __inline uint32_t
+rdr6(void)
+{
+	uint32_t dr6;
+	__asm __volatile("movl %%dr6,%0" : "=r" (dr6));
+	return dr6;
 }
 
 static __inline void
