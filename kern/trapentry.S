@@ -571,7 +571,11 @@ _alltraps:
 
   # pushl %esp to pass a pointer to the Trapframe as an argument to trap()
   pushl %esp
+  /* Nuke frame pointer, like we do in entry.S when bootstrapping kernel.
+     Otherwise backtrace would walk off the stack. */
+  movl $0, %ebp
   call trap
+  # WEI: I don't think trap would return as of lab3.
 
   # Clean up the stack setup for previous trap() call and prepare for iret
   addl $4, %esp       # skip the argument we passed on stack to trap()

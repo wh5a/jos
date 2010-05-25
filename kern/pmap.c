@@ -719,9 +719,27 @@ static uintptr_t user_mem_check_addr;
 int
 user_mem_check(struct Env *env, const void *va, size_t len, int perm)
 {
-	// LAB 3: Your code here. 
+  perm |= PTE_P;
+  user_mem_check_addr = (uintptr_t) va;
+  uintptr_t end = ROUNDUP(user_mem_check_addr+len, PGSIZE);
+  pde_t *pgdir = env->env_pgdir;
+  pte_t *pte;
 
-	return 0;
+  for (; user_mem_check_addr < end; user_mem_check_addr += PGSIZE) {
+    if (user_mem_check_addr >= ULIM)
+      return -E_FAULT;
+
+    /* Check page directory */
+    if ((pgdir[PDX(user_mem_check_addr)] & perm) != perm)
+      return -E_FAULT;
+
+    /* Check page table */
+    pte = pgdir_walk(pgdir, (void *)user_mem_check_addr, 0);
+    if ((*pte & perm) != perm)
+      return -E_FAULT;
+  }
+  
+  return 0;
 }
 
 //
