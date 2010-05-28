@@ -18,7 +18,21 @@ sched_yield(void)
 	// But never choose envs[0], the idle environment,
 	// unless NOTHING else is runnable.
 
-	// LAB 4: Your code here.
+  uint32_t i, n = 0;
+  if (curenv)
+    i = curenv - envs + 1;
+  else
+    i = 1;
+
+  for (; n < NENV - 1; n++) {
+    if (envs[i].env_status == ENV_RUNNABLE) {
+      env_run(&envs[i]);
+      return;
+    }
+    i++;
+    if (i == NENV)
+      i = 1;
+  }
 
 	// Run the special idle environment when nothing else is runnable.
 	if (envs[0].env_status == ENV_RUNNABLE)
