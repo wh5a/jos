@@ -1,6 +1,7 @@
 #include <inc/mmu.h>
 #include <inc/x86.h>
 #include <inc/assert.h>
+#include <inc/string.h>
 
 #include <kern/pmap.h>
 #include <kern/trap.h>
@@ -247,11 +248,13 @@ page_fault_handler(struct Trapframe *tf)
 	// Call the environment's page fault upcall, if one exists.  Set up a
 	// page fault stack frame on the user exception stack (below
 	// UXSTACKTOP), then branch to curenv->env_pgfault_upcall.
-	//
+        if (curenv->env_pgfault_upcall) {
+          uintptr_t stacktop = UXSTACKTOP;
+
 	// The page fault upcall might cause another page fault, in which case
 	// we branch to the page fault upcall recursively, pushing another
 	// page fault stack frame on top of the user exception stack.
-	//
+          if (tf->tf_esp < USTACKTOP && tf->tf_esp >= USTACKTOP-PGSIZE)
 	// The trap handler needs one word of scratch space at the top of the
 	// trap-time stack in order to return.  In the non-recursive case, we
 	// don't have to worry about this because the top of the regular user
@@ -259,18 +262,29 @@ page_fault_handler(struct Trapframe *tf)
 	// an extra word between the current top of the exception stack and
 	// the new stack frame because the exception stack _is_ the trap-time
 	// stack.
-	//
+            stacktop = tf->tf_esp - sizeof(uintptr_t);
+
+          stacktop -= sizeof(struct UTrapframe);
+          struct UTrapframe u;
+          user_mem_assert(curenv, (void *)stacktop, sizeof u, PTE_W);
+          u.utf_fault_va = fault_va;
+          u.utf_err = tf->tf_err;
+          u.utf_regs = tf->tf_regs;
+          u.utf_eip = tf->tf_eip;
+          u.utf_eflags = tf->tf_eflags;
+          u.utf_esp = tf->tf_esp;
+
+          lcr3(curenv->env_cr3);
+          memmove((void *)stacktop, &u, sizeof u);
+          lcr3(boot_cr3);
+
+          tf->tf_esp = stacktop;
+          tf->tf_eip = (uintptr_t)curenv->env_pgfault_upcall;
+          env_run(curenv);
+        }
+
 	// If there's no page fault upcall, the environment didn't allocate a
 	// page for its exception stack or can't write to it, or the exception
 	// stack overflows, then destroy the environment that caused the fault.
-	//
-	// Hints:
-	//   user_mem_assert() and env_run() are useful here.
-	//   To change what the user environment runs, modify 'curenv->env_tf'
-	//   (the 'tf' variable points at 'curenv->env_tf').
-
-	// LAB 4: Your code here.
-
-	// Destroy the environment that caused the fault.
 	env_destroy(curenv);
 }
