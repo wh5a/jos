@@ -42,7 +42,14 @@ _pgfault_upcall:
 	// Now the C page fault handler has returned and you must return
 	// to the trap time state.
 	// Push trap-time %eip onto the trap-time stack.
-	//
+        // All registers are available, as we'll restore trap-time registers below
+	addl $8, %esp          # skip faultva and err code
+	movl 0x28(%esp), %eax  # trap-time esp
+	movl 0x20(%esp), %edx  # trap-time eip
+	subl $4, %eax
+	movl %edx, (%eax)
+	movl %eax, 0x28(%esp)
+
 	// Explanation:
 	//   We must prepare the trap-time stack for our eventual return to
 	//   re-execute the instruction that faulted.
@@ -59,21 +66,16 @@ _pgfault_upcall:
 	//   In the case of a recursive fault on the exception stack,
 	//   note that the word we're pushing now will fit in the
 	//   blank word that the kernel reserved for us.
-	//
-	// Hints:
-	//   What registers are available for intermediate calculations?
-	//
-	// LAB 4: Your code here.
 
 	// Restore the trap-time registers.
-	// LAB 4: Your code here.
+        popal
 
 	// Restore eflags from the stack.
-	// LAB 4: Your code here.
+	addl $4, %esp       # skip eip
+        popfl
 
 	// Switch back to the adjusted trap-time stack.
-	// LAB 4: Your code here.
+	popl %esp
 
 	// Return to re-execute the instruction that faulted.
-	// LAB 4: Your code here.
-
+	ret

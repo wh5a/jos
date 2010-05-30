@@ -1,7 +1,6 @@
 #include <inc/mmu.h>
 #include <inc/x86.h>
 #include <inc/assert.h>
-#include <inc/string.h>
 
 #include <kern/pmap.h>
 #include <kern/trap.h>
@@ -254,7 +253,7 @@ page_fault_handler(struct Trapframe *tf)
 	// The page fault upcall might cause another page fault, in which case
 	// we branch to the page fault upcall recursively, pushing another
 	// page fault stack frame on top of the user exception stack.
-          if (tf->tf_esp < USTACKTOP && tf->tf_esp >= USTACKTOP-PGSIZE)
+          if (tf->tf_esp < UXSTACKTOP && tf->tf_esp >= UXSTACKTOP-PGSIZE)
 	// The trap handler needs one word of scratch space at the top of the
 	// trap-time stack in order to return.  In the non-recursive case, we
 	// don't have to worry about this because the top of the regular user
@@ -265,18 +264,14 @@ page_fault_handler(struct Trapframe *tf)
             stacktop = tf->tf_esp - sizeof(uintptr_t);
 
           stacktop -= sizeof(struct UTrapframe);
-          struct UTrapframe u;
-          user_mem_assert(curenv, (void *)stacktop, sizeof u, PTE_W);
-          u.utf_fault_va = fault_va;
-          u.utf_err = tf->tf_err;
-          u.utf_regs = tf->tf_regs;
-          u.utf_eip = tf->tf_eip;
-          u.utf_eflags = tf->tf_eflags;
-          u.utf_esp = tf->tf_esp;
-
-          lcr3(curenv->env_cr3);
-          memmove((void *)stacktop, &u, sizeof u);
-          lcr3(boot_cr3);
+          struct UTrapframe *u = (struct UTrapframe*) stacktop;
+          user_mem_assert(curenv, u, sizeof (struct UTrapframe), PTE_W);
+          u->utf_fault_va = fault_va;
+          u->utf_err = tf->tf_err;
+          u->utf_regs = tf->tf_regs;
+          u->utf_eip = tf->tf_eip;
+          u->utf_eflags = tf->tf_eflags;
+          u->utf_esp = tf->tf_esp;
 
           tf->tf_esp = stacktop;
           tf->tf_eip = (uintptr_t)curenv->env_pgfault_upcall;
