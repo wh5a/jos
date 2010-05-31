@@ -150,6 +150,9 @@ trap_dispatch(struct Trapframe *tf)
     return;
     
   //// LAB 4: Handle clock interrupts.
+  case IRQ_OFFSET + IRQ_TIMER:
+    sched_yield();
+    break;
 
     // Handle spurious interupts
     // The hardware sometimes raises these because of noise on the
