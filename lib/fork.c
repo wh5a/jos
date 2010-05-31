@@ -78,15 +78,7 @@ duppage(envid_t envid, unsigned pn)
   return sys_page_map(0, addr, envid, addr, perm);
 }
 
-//
-// User-level fork with copy-on-write.
-//
-// Returns: child's envid to the parent, 0 to the child, < 0 on error.
-// It is also OK to panic on error.
-//
-envid_t
-fork(void)
-{
+envid_t realfork(int shared) {
 // Set up our page fault handler appropriately.
   set_pgfault_handler(pgfault);
 // Create a child.
@@ -121,9 +113,22 @@ fork(void)
       if (pn == VPN(UXSTACKTOP) - 1)
         continue;
 
-      r = duppage(envid, pn);
-      if (r)
-        panic("duppage: %e", r);
+      if (!shared || pn == VPN(USTACKTOP) - 1) {
+        r = duppage(envid, pn);
+        if (r)
+          panic("duppage: %e", r);
+      }
+      else {
+        void *addr = (void *)(pn << PGSHIFT);
+        int perm = vpt[pn] & PTE_USER;
+        perm |= PTE_SHARE;
+        r = sys_page_map(0, addr, 0, addr, perm);
+        if (r)
+          panic("sys_page_map: %e", r);
+        r = sys_page_map(0, addr, envid, addr, perm);
+        if (r)
+          panic("sys_page_map: %e", r);
+      }
     }
   }
 
@@ -139,10 +144,21 @@ fork(void)
   return envid;
 }
 
-// Challenge!
-int
+//
+// User-level fork with copy-on-write.
+//
+// Returns: child's envid to the parent, 0 to the child, < 0 on error.
+// It is also OK to panic on error.
+//
+envid_t
+fork(void)
+{
+  return realfork(0);
+}
+
+// The parent and child share all their memory pages except the stack area
+envid_t
 sfork(void)
 {
-	panic("sfork not implemented");
-	return -E_INVAL;
+  return realfork(1);
 }
