@@ -233,10 +233,6 @@ page_fault_handler(struct Trapframe *tf)
 	// Read processor's CR2 register to find the faulting address
 	fault_va = rcr2();
 
-	cprintf("[%08x] user fault va %08x ip %08x\n",
-		curenv->env_id, fault_va, tf->tf_eip);
-	print_trapframe(tf);
-
 	// Handle kernel-mode page faults.
         if (tf->tf_cs == GD_KT)
           panic("Page fault in kernel");
@@ -281,5 +277,9 @@ page_fault_handler(struct Trapframe *tf)
 	// If there's no page fault upcall, the environment didn't allocate a
 	// page for its exception stack or can't write to it, or the exception
 	// stack overflows, then destroy the environment that caused the fault.
+	cprintf("[%08x] user fault va %08x ip %08x\n",
+		curenv->env_id, fault_va, tf->tf_eip);
+	print_trapframe(tf);
+
 	env_destroy(curenv);
 }
