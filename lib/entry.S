@@ -2,6 +2,15 @@
 #include <inc/memlayout.h>
 
 .data
+	// define page-aligned fsipcbuf for fsipc.c
+	// ... and fdtab for file.c
+	.p2align PGSHIFT
+	.globl fsipcbuf
+fsipcbuf:
+	.space PGSIZE
+	.globl fdtab
+fdtab:
+	.space PGSIZE
 
 
 // Define the global symbols 'envs', 'pages', 'vpt', and 'vpd'

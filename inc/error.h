@@ -16,6 +16,14 @@
 #define E_IPC_NOT_RECV	7	// Attempt to send to env that is not recving
 #define E_EOF		8	// Unexpected end of file
 
-#define MAXERROR	8
+// File system error codes -- only seen in user-level
+#define	E_NO_DISK	9	// No free space left on disk
+#define E_MAX_OPEN	10	// Too many files are open
+#define E_NOT_FOUND	11 	// File or block not found
+#define E_BAD_PATH	12	// Bad path
+#define E_FILE_EXISTS	13	// File already exists
+#define E_NOT_EXEC	14	// File not a valid executable
+
+#define MAXERROR	14
 
 #endif	// !JOS_INC_ERROR_H */

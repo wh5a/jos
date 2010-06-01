@@ -17,6 +17,9 @@
 #include <inc/memlayout.h>
 #include <inc/syscall.h>
 #include <inc/trap.h>
+#include <inc/fs.h>
+#include <inc/fd.h>
+#include <inc/args.h>
 
 #define USED(x)		(void)(x)
 
@@ -73,6 +76,39 @@ int32_t ipc_recv(envid_t *from_env_store, void *pg, int *perm_store);
 envid_t	fork(void);
 envid_t	sfork(void);	// Challenge!
 
+// fd.c
+int	close(int fd);
+ssize_t	read(int fd, void *buf, size_t nbytes);
+ssize_t	write(int fd, const void *buf, size_t nbytes);
+int	seek(int fd, off_t offset);
+void	close_all(void);
+ssize_t	readn(int fd, void *buf, size_t nbytes);
+int	dup(int oldfd, int newfd);
+int	fstat(int fd, struct Stat *statbuf);
+int	stat(const char *path, struct Stat *statbuf);
+
+// file.c
+int	open(const char *path, int mode);
+int	read_map(int fd, off_t offset, void **blk);
+int	ftruncate(int fd, off_t size);
+int	remove(const char *path);
+int	sync(void);
+
+// fsipc.c
+int	fsipc_open(const char *path, int omode, struct Fd *fd);
+int	fsipc_map(int fileid, off_t offset, void *dst_va);
+int	fsipc_set_size(int fileid, off_t size);
+int	fsipc_close(int fileid);
+int	fsipc_dirty(int fileid, off_t offset);
+int	fsipc_remove(const char *path);
+int	fsipc_sync(void);
+
+// pageref.c
+int	pageref(void *addr);
+
+// spawn.c
+envid_t	spawn(const char *program, const char **argv);
+envid_t	spawnl(const char *program, const char *arg0, ...);
 
 
 /* File open modes */

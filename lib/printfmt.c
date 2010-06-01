@@ -29,6 +29,12 @@ static const char * const error_string[MAXERROR + 1] =
 	"segmentation fault",
 	"env is not recving",
 	"unexpected end of file",
+	"no free space on disk",
+	"too many files are open",
+	"file or block not found",
+	"invalid path",
+	"file already exists",
+	"file is not a valid executable",
 };
 
 /*
