@@ -87,7 +87,7 @@ envid_t realfork(int shared) {
     panic("sys_exofork: %e", envid);
   if (envid == 0) { // Child
     // Fix env
-    env = envs + ENVX(sys_getenvid());
+    env = envs + ENVX(sys_getenvid());  // Problematic for sfork because globals are shared
     return 0;
   }
 

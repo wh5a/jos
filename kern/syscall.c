@@ -214,6 +214,24 @@ sys_page_alloc(envid_t envid, void *va, int perm)
   return 0;
 }
 
+static int
+page_map(struct Env *srcenv, void *srcva,
+	 struct Env *dstenv, void *dstva, int perm)
+{
+  int r = check_perm(perm);
+  if (r)
+    return r;
+
+  pte_t *pte;
+  struct Page *p = page_lookup(srcenv->env_pgdir, srcva, &pte);
+  if (!p)
+    return -E_INVAL;
+  if ((perm & PTE_W) && !(*pte & PTE_W))
+    return -E_INVAL;
+
+  return page_insert(dstenv->env_pgdir, p, dstva, perm);
+}
+
 // Map the page of memory at 'srcva' in srcenvid's address space
 // at 'dstva' in dstenvid's address space with permission 'perm'.
 // Perm has the same restrictions as in sys_page_alloc, except
@@ -246,18 +264,7 @@ sys_page_map(envid_t srcenvid, void *srcva,
       (uint32_t)dstva >= UTOP || PGOFF(dstva))
     return -E_INVAL;
 
-  ret = check_perm(perm);
-  if (ret)
-    return ret;
-
-  pte_t *pte;
-  struct Page *p = page_lookup(srcenv->env_pgdir, srcva, &pte);
-  if (!p)
-    return -E_INVAL;
-  if ((perm & PTE_W) && !(*pte & PTE_W))
-    return -E_INVAL;
-
-  return page_insert(dstenv->env_pgdir, p, dstva, perm);
+  return page_map(srcenv, srcva, dstenv, dstva, perm);
 }
 
 // Unmap the page of memory at 'va' in the address space of 'envid'.
@@ -321,8 +328,30 @@ sys_page_unmap(envid_t envid, void *va)
 static int
 sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
 {
-	// LAB 4: Your code here.
-	panic("sys_ipc_try_send not implemented");
+  int r, ret = 0;
+  struct Env *e;
+  
+  if ((r = envid2env(envid, &e, 0)))
+    return r;
+  if (!e->env_ipc_recving)
+    return -E_IPC_NOT_RECV;
+  void *dstva = e->env_ipc_dstva;
+  if ((uintptr_t)srcva < UTOP && (uintptr_t)dstva < UTOP) {
+    if (PGOFF(srcva))
+      return -E_INVAL;
+    if ((r = page_map(curenv, srcva, e, dstva, perm)))
+      return r;
+    ret = 1;
+    e->env_ipc_perm = perm;
+  }
+  else
+    e->env_ipc_perm = 0;
+  
+  e->env_ipc_recving = 0;
+  e->env_ipc_from = curenv->env_id;
+  e->env_ipc_value = value;
+  e->env_status = ENV_RUNNABLE;
+  return ret;
 }
 
 // Block until a value is ready.  Record that you want to receive
@@ -339,9 +368,18 @@ sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
 static int
 sys_ipc_recv(void *dstva)
 {
-	// LAB 4: Your code here.
-	panic("sys_ipc_recv not implemented");
-	return 0;
+  if ((uintptr_t)dstva < UTOP && (PGOFF(dstva)))
+    return -E_INVAL;
+
+  curenv->env_ipc_dstva = dstva;
+  curenv->env_ipc_recving = 1;
+  /* Just set the status, do NOT call sched_yield(): trap() does it for us.
+     As soon as we call sched_yield(), other processes take control, and
+     when we are ready to run again, we start directly in user space using
+     the saved context, so we'll never get back to code after sched_yield()!!
+  */
+  curenv->env_status = ENV_NOT_RUNNABLE;
+  return 0;
 }
 
 
@@ -373,6 +411,10 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
     return sys_page_unmap(a1, (void *)a2);
   case SYS_env_set_pgfault_upcall:
     return sys_env_set_pgfault_upcall(a1, (void *)a2);
+  case SYS_ipc_try_send:
+    return sys_ipc_try_send(a1, a2, (void *)a3, a4);
+  case SYS_ipc_recv:
+    return sys_ipc_recv((void *)a1);
   default:
     return -E_INVAL;
   }
