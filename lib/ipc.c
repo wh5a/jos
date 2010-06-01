@@ -21,6 +21,9 @@ ipc_recv(envid_t *from_env_store, void *pg, int *perm_store)
   void *dstva = pg ? pg : (void *)UTOP;
   int r = sys_ipc_recv(dstva);
 
+  // With sfork all globals are shared, so we set env every time.
+  env = envs + ENVX(sys_getenvid());
+
   if (from_env_store)
     *from_env_store = r ? 0 : env->env_ipc_from;
   if (perm_store)

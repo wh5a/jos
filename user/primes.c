@@ -1,6 +1,6 @@
 // Concurrent version of prime sieve of Eratosthenes.
 // Invented by Doug McIlroy, inventor of Unix pipes.
-// See http://plan9.bell-labs.com/~rsc/thread.html.
+// See http://swtch.com/~rsc/thread/
 // The picture halfway down the page and the text surrounding it
 // explain what's going on here.
 //
