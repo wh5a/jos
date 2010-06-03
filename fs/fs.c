@@ -60,8 +60,6 @@ map_block(uint32_t blockno)
 // Returns 0 on success, or a negative error code on error.
 // 
 // If blk != 0, set *blk to the address of the block in memory.
-//
-// Hint: Use diskaddr, map_block, and ide_read.
 static int
 read_block(uint32_t blockno, char **blk)
 {
@@ -74,15 +72,23 @@ read_block(uint32_t blockno, char **blk)
 	if (bitmap && block_is_free(blockno))
 		panic("reading free block %08x\n", blockno);
 
-	// LAB 5: Your code here.
-	panic("read_block not implemented");
-	return 0;
+        addr = diskaddr(blockno);
+
+	if (!block_is_mapped(blockno)) {
+          if ((r = map_block(blockno)))
+            return r;
+
+          if ((r = ide_read(BLKSECTS*blockno, addr, BLKSECTS)))
+            return r;
+        }
+
+        if (blk)
+          *blk = addr;
+        return 0;
 }
 
 // Copy the current contents of the block out to disk.
 // Then clear the PTE_D bit using sys_page_map.
-// Hint: Use ide_write.
-// Hint: Use the PTE_USER constant when calling sys_page_map.
 void
 write_block(uint32_t blockno)
 {
@@ -92,8 +98,14 @@ write_block(uint32_t blockno)
 		panic("write unmapped block %08x", blockno);
 	
 	// Write the disk block and clear PTE_D.
-	// LAB 5: Your code here.
-	panic("write_block not implemented");
+        addr = diskaddr(blockno);
+        int r;
+        if ((r = ide_write(BLKSECTS*blockno, addr, BLKSECTS)))
+          panic("ide_write: %e", r);
+
+        int perm = vpt[VPN(addr)] & PTE_USER;
+        if ((r = sys_page_map(0, addr, 0, addr, perm)))
+          panic("sys_page_map: %e", r);
 }
 
 // Make sure this block is unmapped.

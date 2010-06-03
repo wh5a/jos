@@ -190,7 +190,8 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 	e->env_ipc_recving = 0;
 
 	// If this is the file server (e == &envs[1]) give it I/O privileges.
-	// LAB 5: Your code here.
+	if (e == &envs[1])
+          e->env_tf.tf_eflags |= FL_IOPL_MASK;
 
 	// commit the allocation
 	LIST_REMOVE(e, env_link);
