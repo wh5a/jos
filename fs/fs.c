@@ -137,6 +137,7 @@ block_is_free(uint32_t blockno)
 }
 
 // Mark a block free in the bitmap
+// WEI: when to write bitmap back?
 void
 free_block(uint32_t blockno)
 {
@@ -152,14 +153,18 @@ free_block(uint32_t blockno)
 // 
 // Return block number allocated on success,
 // -E_NO_DISK if we are out of blocks.
-//
-// Hint: use free_block as an example for manipulating the bitmap.
 int
 alloc_block_num(void)
 {
-	// LAB 5: Your code here.
-	panic("alloc_block_num not implemented");
-	return -E_NO_DISK;
+  int i = 2 + super->s_nblocks/BLKBITSIZE;
+  for (; i < super->s_nblocks; i++)
+    if (block_is_free(i)) {
+      bitmap[i/32] &= ~(1<<(i%32));
+      write_block(i/BLKBITSIZE + 2);
+      return i;
+    }
+  
+  return -E_NO_DISK;
 }
 
 // Allocate a block -- first find a free block in the bitmap,
@@ -167,9 +172,15 @@ alloc_block_num(void)
 int
 alloc_block(void)
 {
-	// LAB 5: Your code here.
-	panic("alloc_block not implemented");
-	return -E_NO_DISK;
+  int bno = alloc_block_num();
+  if (bno < 0)
+    return bno;
+  int r = map_block(bno);
+  if (r) {
+    free_block(bno);
+    return r;
+  }
+  return bno;
 }
 
 // Read and validate the file system super-block.
@@ -201,9 +212,6 @@ read_super(void)
 // Check that all reserved blocks -- 0, 1, and the bitmap blocks themselves --
 // are all marked as in-use
 // (for each block i, assert(!block_is_free(i))).
-//
-// Hint: Assume that the superblock has already been loaded into
-// memory (in variable 'super').  Check out super->s_nblocks.
 void
 read_bitmap(void)
 {
@@ -216,7 +224,6 @@ read_bitmap(void)
 	// contains the in-use bits for BLKBITSIZE blocks.  There are
 	// super->s_nblocks blocks in the disk altogether.
 	// Set 'bitmap' to point to the first address in the bitmap.
-	// Hint: Use read_block.
 	for (i = 0; i * BLKBITSIZE < super->s_nblocks; i++) {
 		if ((r = read_block(2+i, &blk)) < 0)
 			panic("cannot read bitmap block %d: %e", i, r);
@@ -297,15 +304,40 @@ fs_init(void)
 //	-E_NO_DISK if there's no space on the disk for an indirect block.
 //	-E_NO_MEM if there's no space in memory for an indirect block.
 //	-E_INVAL if filebno is out of range (it's >= NINDIRECT).
-//
-// Analogy: This is like pgdir_walk for files.  
-// Hint: Don't forget to clear any block you allocate.
 int
 file_block_walk(struct File *f, uint32_t filebno, uint32_t **ppdiskbno, bool alloc)
 {
-	// LAB 5: Your code here.
-	panic("file_block_walk not implemented");
-	return -E_NO_DISK;
+  if (filebno >= NINDIRECT)
+    return -E_INVAL;
+  if (filebno < NDIRECT) {
+    if (ppdiskbno)
+      *ppdiskbno = &f->f_direct[filebno];
+    return 0;
+  }
+
+  char *va;
+  if (!f->f_indirect) {
+    if (!alloc)
+      return -E_NOT_FOUND;
+    int ind = alloc_block();
+    if (ind < 0)
+      return ind;
+    f->f_indirect = ind;
+    map_block(ind);
+    va = diskaddr(ind);
+// Hint: Don't forget to clear any block you allocate.
+    memset(va, 0, BLKSIZE);
+    write_block(ind);
+  }
+  else {
+    int r = read_block(f->f_indirect, &va);
+    if (r)
+      return r;
+  }
+
+  if (ppdiskbno)
+    *ppdiskbno = (uint32_t *)va + filebno;
+  return 0;
 }
 
 // Set '*diskbno' to the disk block number for the 'filebno'th block
@@ -317,14 +349,23 @@ file_block_walk(struct File *f, uint32_t filebno, uint32_t **ppdiskbno, bool all
 //	-E_NO_DISK if a block needed to be allocated but the disk is full.
 //	-E_NO_MEM if we're out of memory.
 //	-E_INVAL if filebno is out of range.
-//
-// Hint: Use file_block_walk.
 int
 file_map_block(struct File *f, uint32_t filebno, uint32_t *diskbno, bool alloc)
 {
-	// LAB 5: Your code here.
-	panic("file_map_block not implemented");
-	return -E_NO_DISK;
+  uint32_t *p;
+  int r = file_block_walk(f, filebno, &p, alloc);
+  if (r)
+    return r;
+  if (!*p) {
+    if (!alloc)
+      return -E_NOT_FOUND;
+    int bno = alloc_block();
+    if (bno < 0)
+      return bno;
+    *p = bno;
+  }
+  *diskbno = *p;
+  return 0;
 }
 
 // Remove a block from file f.  If it's not there, just silently succeed.
@@ -350,14 +391,14 @@ file_clear_block(struct File *f, uint32_t filebno)
 int
 file_get_block(struct File *f, uint32_t filebno, char **blk)
 {
-	int r;
-	uint32_t diskbno;
+  int r;
+  uint32_t diskbno;
 
-	// Read in the block, leaving the pointer in *blk.
-	// Hint: Use file_map_block and read_block.
-	// LAB 5: Your code here.
-	panic("file_get_block not implemented");
-	return 0;
+  // Read in the block, leaving the pointer in *blk.
+  r = file_map_block(f, filebno, &diskbno, 1);
+  if (r)
+    return r;
+  return read_block(diskbno, blk);
 }
 
 // Mark the offset/BLKSIZE'th block dirty in file f
@@ -365,12 +406,14 @@ file_get_block(struct File *f, uint32_t filebno, char **blk)
 int
 file_dirty(struct File *f, off_t offset)
 {
-	int r;
-	char *blk;
+  int r;
+  char *blk;
 
-	// LAB 5: Your code here.
-	panic("file_dirty not implemented");
-	return 0;
+  r = file_get_block(f, offset/BLKSIZE, &blk);
+  if (r)
+    return r;
+  *(volatile char*)blk = *blk;
+  return 0;
 }
 
 // Try to find a file named "name" in dir.  If so, set *file to it.
