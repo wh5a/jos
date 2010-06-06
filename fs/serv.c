@@ -189,24 +189,32 @@ out:
 	ipc_send(envid, r, 0, 0);
 }
 
+// Map the requested block in the client's address space
+// by using ipc_send.
 void
 serve_map(envid_t envid, struct Fsreq_map *rq)
 {
 	int r;
-	char *blk;
+	char *blk = NULL;
 	struct OpenFile *o;
-	int perm;
+	int perm = 0;
 
 	if (debug)
 		cprintf("serve_map %08x %08x %08x\n", envid, rq->req_fileid, rq->req_offset);
 
-	// Map the requested block in the client's address space
-	// by using ipc_send.
+	if ((r = openfile_lookup(envid, rq->req_fileid, &o)) < 0)
+		goto out;
+
 	// Map read-only unless the file's open mode (o->o_mode) allows writes
 	// (see the O_ flags in inc/lib.h).
-	
-	// LAB 5: Your code here.
-	panic("serve_map not implemented");
+        perm = PTE_U | PTE_P | PTE_SHARE;
+        if (o->o_mode & (O_WRONLY|O_RDWR))
+          perm |= PTE_W;
+        
+	r = file_get_block(o->o_file, rq->req_offset/BLKSIZE, &blk);
+
+out:
+	ipc_send(envid, r, blk, perm);
 }
 
 void
@@ -249,6 +257,7 @@ serve_remove(envid_t envid, struct Fsreq_remove *rq)
 	ipc_send(envid, r, 0, 0);
 }
 
+// Mark the page containing the requested file offset as dirty.
 void
 serve_dirty(envid_t envid, struct Fsreq_dirty *rq)
 {
@@ -258,11 +267,13 @@ serve_dirty(envid_t envid, struct Fsreq_dirty *rq)
 	if (debug)
 		cprintf("serve_dirty %08x %08x %08x\n", envid, rq->req_fileid, rq->req_offset);
 
-	// Mark the page containing the requested file offset as dirty.
-	// Returns 0 on success, < 0 on error.
-	
-	// LAB 5: Your code here.
-	panic("serve_dirty not implemented");
+	if ((r = openfile_lookup(envid, rq->req_fileid, &o)) < 0)
+		goto out;
+
+	r = file_dirty(o->o_file, rq->req_offset);
+
+out:
+	ipc_send(envid, r, 0, 0);
 }
 
 void

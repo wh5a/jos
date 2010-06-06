@@ -33,10 +33,8 @@ struct Fd {
 	int fd_dev_id;
 	off_t fd_offset;
 	int fd_omode;
-	union {
-		// File server files
-		struct FdFile fd_file;
-	};
+	// File server files
+	struct FdFile fd_file;
 };
 
 struct Stat {

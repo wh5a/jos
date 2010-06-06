@@ -32,7 +32,6 @@ fsipc(unsigned type, void *fsreq, void *dstva, int *perm)
 int
 fsipc_open(const char *path, int omode, struct Fd *fd)
 {
-	int perm;
 	struct Fsreq_open *req;
 
 	req = (struct Fsreq_open*)fsipcbuf;
@@ -41,7 +40,7 @@ fsipc_open(const char *path, int omode, struct Fd *fd)
 	strcpy(req->req_path, path);
 	req->req_omode = omode;
 
-	return fsipc(FSREQ_OPEN, req, fd, &perm);
+	return fsipc(FSREQ_OPEN, req, fd, 0);
 }
 
 // Make a map-block request to the file server.
@@ -51,9 +50,10 @@ fsipc_open(const char *path, int omode, struct Fd *fd)
 int
 fsipc_map(int fileid, off_t offset, void *dstva)
 {
-	// LAB 5: Your code here.
-	panic("fsipc_map not implemented");
-	return -E_UNSPECIFIED;
+  struct Fsreq_map *req = (struct Fsreq_map*)fsipcbuf;
+  req->req_fileid = fileid;
+  req->req_offset = offset;
+  return fsipc(FSREQ_MAP, req, dstva, 0);
 }
 
 // Make a set-file-size request to the file server.
@@ -84,9 +84,10 @@ fsipc_close(int fileid)
 int
 fsipc_dirty(int fileid, off_t offset)
 {
-	// LAB 5: Your code here.
-	panic("fsipc_dirty not implemented");
-	return -E_UNSPECIFIED;
+  struct Fsreq_dirty *req = (struct Fsreq_dirty*)fsipcbuf;
+  req->req_fileid = fileid;
+  req->req_offset = offset;
+  return fsipc(FSREQ_DIRTY, req, 0, 0);
 }
 
 // Ask the file server to delete a file, given its pathname.
