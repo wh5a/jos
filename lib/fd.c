@@ -42,8 +42,6 @@ fd2num(struct Fd *fd)
 // without allocating the first page we return, we'll return the same
 // page the second time.
 //
-// Hint: Use INDEX2FD.
-//
 // Returns 0 on success, < 0 on error.  Errors are:
 //	-E_MAX_FD: no more file descriptors
 // On error, *fd_store is set to 0.

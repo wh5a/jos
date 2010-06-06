@@ -31,17 +31,26 @@ int
 open(const char *path, int mode)
 {
 	// Find an unused file descriptor page using fd_alloc.
+  struct Fd *fd;
+  int r = fd_alloc(&fd);
+  if (r)
+    return r;
 	// Then send a message to the file server to open a file
 	// using a function in fsipc.c.
 	// (fd_alloc does not allocate a page, it just returns an
 	// unused fd address.  Do you need to allocate a page?  Look
 	// at fsipc.c if you aren't sure.)
+  if ((r = fsipc_open(path, mode, fd)))
+    goto err;
 	// Then map the file data (you may find fmap() helpful).
+  if ((r = fmap(fd, 0, fd->fd_file.file.f_size)))
+    goto err;
 	// Return the file descriptor index.
+  return fd2num(fd);
 	// If any step fails, use fd_close to free the file descriptor.
-
-	// LAB 5: Your code here.
-	panic("open() unimplemented!");
+err:
+  fd_close(fd, 0);
+  return r;
 }
 
 // Clean up a file-server file descriptor.
@@ -50,11 +59,11 @@ static int
 file_close(struct Fd *fd)
 {
 	// Unmap any data mapped for the file,
+  int r1 = funmap(fd, fd->fd_file.file.f_size, 0, 1);
 	// then tell the file server that we have closed the file
 	// (to free up its resources).
-
-	// LAB 5: Your code here.
-	panic("close() unimplemented!");
+  int r2 = fsipc_close(fd->fd_file.id);
+  return (r1 || r2);
 }
 
 // Read 'n' bytes from 'fd' at the current seek position into 'buf'.
@@ -160,20 +169,27 @@ file_trunc(struct Fd *fd, off_t newsize)
 // Harmlessly does nothing if oldsize >= newsize.
 // Returns 0 on success, < 0 on error.
 // If there is an error, unmaps any newly allocated pages.
-//
-// Hint: Use fd2data to get the start of the file mapping area for fd.
-// Hint: You can use ROUNDUP to page-align offsets.
 static int
 fmap(struct Fd* fd, off_t oldsize, off_t newsize)
 {
-	// LAB 5: Your code here.
-	panic("fmap not implemented");
-	return -E_UNSPECIFIED;
+  uint32_t fileid = fd->fd_file.id;
+  off_t off = ROUNDUP(oldsize, PGSIZE);
+  char *va = fd2data(fd);
+  int r;
+  
+  for (; off < newsize; off+=PGSIZE) {
+    r = fsipc_map(fileid, off, va+off);
+    if (r) {
+      funmap(fd, off, oldsize, 0);
+      return r;
+    }
+  }
+  return 0;
 }
 
 // Unmap any file pages that no longer represent valid file pages
 // when the size of the file as mapped in our address space decreases.
-// Harmlessly does nothing if newsize >= oldsize.  Don't do anything
+// Harmlessly does nothing if newsize >= oldsize.
 //
 // Hint: Remember to call fsipc_dirty if dirty is true and PTE_D bit
 // is set in the pagetable entry.
@@ -182,9 +198,20 @@ fmap(struct Fd* fd, off_t oldsize, off_t newsize)
 static int
 funmap(struct Fd* fd, off_t oldsize, off_t newsize, bool dirty)
 {
-	// LAB 5: Your code here.
-	panic("funmap not implemented");
-	return -E_UNSPECIFIED;
+  uint32_t fileid = fd->fd_file.id;
+  off_t off = ROUNDUP(newsize, PGSIZE);
+  char *va = fd2data(fd);
+  int r, ret = 0;
+
+  for (; off < oldsize; off+=PGSIZE) {
+    if (dirty && (vpt[VPN(va+off)] & PTE_D)) {
+      r = fsipc_dirty(fileid, off);
+      if (r)
+        ret = r;
+    }
+    sys_page_unmap(0, va+off);
+  }
+  return ret;
 }
 
 // Delete a file
