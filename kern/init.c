@@ -12,6 +12,8 @@
 #include <kern/trap.h>
 #include <kern/sched.h>
 #include <kern/picirq.h>
+#include <kern/time.h>
+#include <kern/pci.h>
 
 
 void
@@ -43,11 +45,17 @@ i386_init(void)
 	pic_init();
 	kclock_init();
 
+	time_init();
+	pci_init();
+
 	// Should always have an idle process as first one.
 	ENV_CREATE(user_idle);
 
 	// Start fs.
 	ENV_CREATE(fs_fs);
+
+	// Start ns.
+	ENV_CREATE(net_ns);	
 
 	// Start init
 #if defined(TEST)
@@ -55,9 +63,8 @@ i386_init(void)
 	ENV_CREATE2(TEST, TESTSIZE);
 #else
 	// Touch all you want.
-	// ENV_CREATE(user_writemotd);
-	// ENV_CREATE(user_testfsipc);
-	// ENV_CREATE(user_icode);
+	// ENV_CREATE(user_echosrv);
+	// ENV_CREATE(user_httpd);
 #endif
 
 

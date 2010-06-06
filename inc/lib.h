@@ -20,6 +20,8 @@
 #include <inc/fs.h>
 #include <inc/fd.h>
 #include <inc/args.h>
+#include <inc/malloc.h>
+#include <inc/ns.h>
 
 #define USED(x)		(void)(x)
 
@@ -52,6 +54,7 @@ int	sys_page_map(envid_t src_env, void *src_pg,
 int	sys_page_unmap(envid_t env, void *pg);
 int	sys_ipc_try_send(envid_t to_env, uint32_t value, void *pg, int perm);
 int	sys_ipc_recv(void *rcv_pg);
+unsigned int sys_time_msec(void);
 
 // This must be inlined.  Exercise for reader: why?
 static __inline envid_t sys_exofork(void) __attribute__((always_inline));
@@ -103,6 +106,27 @@ int	fsipc_dirty(int fileid, off_t offset);
 int	fsipc_remove(const char *path);
 int	fsipc_sync(void);
 
+// sockets.c
+int     accept(int s, struct sockaddr *addr, socklen_t *addrlen);
+int     bind(int s, struct sockaddr *name, socklen_t namelen);
+int     shutdown(int s, int how);
+int     closesocket(int s);
+int     connect(int s, const struct sockaddr *name, socklen_t namelen);
+int     listen(int s, int backlog);
+int     recv(int s, void *mem, int len, unsigned int flags);
+int     send(int s, const void *dataptr, int size, unsigned int flags);
+int     socket(int domain, int type, int protocol);
+
+// nsipc.c
+int     nsipc_accept(int s, struct sockaddr *addr, socklen_t *addrlen);
+int     nsipc_bind(int s, struct sockaddr *name, socklen_t namelen);
+int     nsipc_shutdown(int s, int how);
+int     nsipc_close(int s);
+int     nsipc_connect(int s, const struct sockaddr *name, socklen_t namelen);
+int     nsipc_listen(int s, int backlog);
+int     nsipc_recv(int s, void *mem, int len, unsigned int flags);
+int     nsipc_send(int s, const void *dataptr, int size, unsigned int flags);
+int     nsipc_socket(int domain, int type, int protocol);
 // pageref.c
 int	pageref(void *addr);
 

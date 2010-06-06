@@ -11,6 +11,10 @@ fsipcbuf:
 	.globl fdtab
 fdtab:
 	.space PGSIZE
+	.globl nsipcbuf
+	// page-aligned nsipcbuf for nsipc.c
+nsipcbuf:
+	.space PGSIZE
 
 
 // Define the global symbols 'envs', 'pages', 'vpt', and 'vpd'

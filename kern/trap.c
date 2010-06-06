@@ -11,6 +11,8 @@
 #include <kern/sched.h>
 #include <kern/kclock.h>
 #include <kern/picirq.h>
+#include <kern/time.h>
+#include <kern/e100.h>
 
 static struct Taskstate ts;
 
@@ -130,7 +132,6 @@ trap_dispatch(struct Trapframe *tf)
 {
   switch (tf->tf_trapno) {
   //// Lab 3: Handle processor exceptions.
-
   case T_PGFLT:
     page_fault_handler(tf);
     return;
@@ -162,6 +163,8 @@ trap_dispatch(struct Trapframe *tf)
       print_trapframe(tf);
       return;
     }
+
+  //// Lab 6: Add time tick increment to clock interrupts.
 
   default:
     // Unexpected trap: The user process or the kernel has a bug.
