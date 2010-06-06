@@ -125,14 +125,9 @@ boot_alloc(uint32_t n, uint32_t align)
 	//	Step 3: increase boot_freemem to record allocation
         boot_freemem += n;
 	//	Step 4: return allocated chunk
-        if (PADDR(boot_freemem) > maxpa) {
+        if (PADDR(boot_freemem) > maxpa)
           panic("boot_alloc: Out of physical memory.\n");
-          return NULL;
-        }
-        else {
-          cprintf("boot_alloc: Allocated %u bytes at %p\n", n, v);
-          return v;
-        }
+        return v;
 }
 
 // Set up a two-level page table:
