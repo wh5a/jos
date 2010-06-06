@@ -152,6 +152,8 @@ trap_dispatch(struct Trapframe *tf)
     
   //// LAB 4: Handle clock interrupts.
   case IRQ_OFFSET + IRQ_TIMER:
+  //// Lab 6: Add time tick increment to clock interrupts.
+    time_tick();
     sched_yield();
     break;
 
@@ -163,8 +165,6 @@ trap_dispatch(struct Trapframe *tf)
       print_trapframe(tf);
       return;
     }
-
-  //// Lab 6: Add time tick increment to clock interrupts.
 
   default:
     // Unexpected trap: The user process or the kernel has a bug.
