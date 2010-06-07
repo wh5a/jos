@@ -1,5 +1,9 @@
-Other people's implementations:
+Other people's implementations (missing e100 support):
 [1] http://www.cpu.eti.br/jos.html
+
+Implementations with e100 support, but have diverged too much from jos:
+[1] http://code.google.com/p/ekos/
+[2] http://code.google.com/p/xv6plus/
 
 Chinese labs with detailed instructions:
 [1] http://162.105.203.48:8080/gaikuang/os_pro2008.jsp
@@ -8,3 +12,5 @@ Chinese labs with detailed instructions:
 Other universities:
 [1] http://zoo.cs.yale.edu/classes/cs422/pios
     Parallel Instructional Operating System, based on jos
+[2] http://www.cs.utexas.edu/~mwalfish/classes/s10-cs372h
+    Almost the same labs, but with better git log
