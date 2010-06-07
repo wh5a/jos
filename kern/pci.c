@@ -206,7 +206,7 @@ static int
 eepro100_attach(struct pci_func *pcif)
 {
   pci_func_enable(pcif);
-  e100_store_params(pcif);
+  e100_init(pcif);
   return 1;
 }
 

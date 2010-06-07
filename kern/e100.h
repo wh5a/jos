@@ -4,6 +4,6 @@
 #include <inc/types.h>
 #include <kern/pci.h>
 
-void e100_store_params(struct pci_func *);
+void e100_init(struct pci_func *);
 
 #endif	// JOS_KERN_E100_H
