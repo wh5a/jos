@@ -7,8 +7,10 @@
 
 // Flag to do "lspci" at bootup
 static int pci_show_devs = 1;
-static int pci_show_addrs = 0;
+static int pci_show_addrs = 1;
 
+// http://en.wikipedia.org/wiki/PCI_Configuration_Space#Software_implementation
+// http://wiki.osdev.org/PCI
 // PCI "configuration mechanism one"
 static uint32_t pci_conf1_addr_ioport = 0x0cf8;
 static uint32_t pci_conf1_data_ioport = 0x0cfc;
@@ -19,6 +21,7 @@ static int pci_bridge_attach(struct pci_func *pcif);
 // PCI driver table
 struct pci_driver {
 	uint32_t key1, key2;
+  // return >0 on success
 	int (*attachfn) (struct pci_func *pcif);
 };
 
@@ -27,7 +30,9 @@ struct pci_driver pci_attach_class[] = {
 	{ 0, 0, 0 },
 };
 
+static int eepro100_attach(struct pci_func *pcif);
 struct pci_driver pci_attach_vendor[] = {
+  { 0x8086, 0x1209, eepro100_attach},
 	{ 0, 0, 0 },
 };
 
@@ -75,7 +80,7 @@ pci_attach_match(uint32_t key1, uint32_t key2,
 				return r;
 			if (r < 0)
 				cprintf("pci_attach_match: attaching "
-					"%x.%x (%p): e\n",
+					"%x.%x (%p): %e\n",
 					key1, key2, list[i].attachfn, r);
 		}
 	}
@@ -119,6 +124,7 @@ pci_print_func(struct pci_func *f)
 		f->irq_line);
 }
 
+// Bus enumeration: http://en.wikipedia.org/wiki/PCI_Configuration_Space#Bus_enumeration
 static int 
 pci_scan_bus(struct pci_bus *bus)
 {
@@ -181,6 +187,27 @@ pci_bridge_attach(struct pci_func *pcif)
 	
 	pci_scan_bus(&nbus);
 	return 1;
+}
+
+/* When the attach function of a device is called, the device has been
+   found but not yet enabled. This means that the PCI code has not yet
+   determined the resources allocated to the device, such as address
+   space and an IRQ line, and, thus, the last three elements of the
+   struct pci_func structure are not yet filled in.
+
+   The attach function should call pci_func_enable, which will enable
+   the device; determine the resources allocated to the device; and
+   fill in reg_base, reg_size, and irq_line. Because the driver will
+   need these addresses in order to communicate with the device, the
+   attach function should record the IRQ line and base I/O port for
+   future reference.
+*/
+static int
+eepro100_attach(struct pci_func *pcif)
+{
+  pci_func_enable(pcif);
+  e100_store_params(pcif);
+  return 1;
 }
 
 // External PCI subsystem interface
