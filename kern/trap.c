@@ -166,6 +166,9 @@ trap_dispatch(struct Trapframe *tf)
       return;
     }
 
+  //// Lab 7: Handle keyboard interrupts.
+
+
   default:
     // Unexpected trap: The user process or the kernel has a bug.
     print_trapframe(tf);
