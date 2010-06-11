@@ -281,11 +281,35 @@ map_segment(envid_t child, uintptr_t va, size_t memsz,
 	return 0;
 }
 
-// Copy the mappings for shared pages into the child address space.
+// Loop through all page table entries in the current process (just like fork did), copying any page mappings that have the PTE_SHARE bit set into the child process.
 static int
 copy_shared_pages(envid_t child)
 {
-	// LAB 7: Your code here.
-	return 0;
+  int r;
+  int pdeno, pteno;
+  uint32_t pn = 0;
+
+  for (pdeno = 0; pdeno < VPD(UTOP); pdeno++) {
+    if (vpd[pdeno] == 0) {
+      // skip empty PDEs
+      pn += NPTENTRIES;
+      continue;
+    }
+
+    for (pteno = 0; pteno < NPTENTRIES; pteno++,pn++) {
+      if (vpt[pn] == 0)
+        // skip empty PTEs
+        continue;
+
+      int perm = vpt[pn] & PTE_USER;
+      if (perm & PTE_SHARE) {
+        void *addr = (void *)(pn << PGSHIFT);
+        r = sys_page_map(0, addr, child, addr, perm);
+        if (r)
+          return r;
+      }
+    }
+  }
+  return 0;
 }
 
