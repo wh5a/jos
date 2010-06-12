@@ -166,7 +166,12 @@ trap_dispatch(struct Trapframe *tf)
       return;
 
   //// Lab 7: Handle keyboard interrupts.
-
+  case IRQ_OFFSET + IRQ_KBD:
+    kbd_intr();
+    return;
+  case IRQ_OFFSET + IRQ_SERIAL:
+    serial_intr();
+    return;
 
   default:
     if (tf->tf_trapno == IRQ_OFFSET + e100_irq) {

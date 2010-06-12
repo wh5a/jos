@@ -124,7 +124,7 @@ serve_open(envid_t envid, struct Fsreq_open *rq)
 
 	if (debug)
 		cprintf("sending success, page %08x\n", (uintptr_t) o->o_fd);
-	ipc_send(envid, 0, o->o_fd, PTE_P|PTE_U|PTE_W);
+	ipc_send(envid, 0, o->o_fd, PTE_P|PTE_U|PTE_W|PTE_SHARE);
 	return;
 out:
 	ipc_send(envid, r, 0, 0);
