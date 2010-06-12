@@ -39,16 +39,19 @@ KERN_SRCFILES +=	kern/e100.c \
 # Only build files if they exist.
 KERN_SRCFILES := $(wildcard $(KERN_SRCFILES))
 
-KERN_BINFILES :=	user/idle \
+# Binary program images to embed within the kernel.
+KERN_BINFILES :=	user/icode \
+			user/idle \
 			user/pingpong \
 			user/primes \
-			user/faultregs \
-			user/writemotd \
-			user/icode \
-			user/testtime \
-			user/httpd \
-			user/echosrv \
-			user/echotest \
+			user/testpteshare \
+			user/testfdsharing \
+			user/testpipe \
+			user/testpiperace \
+			user/testpiperace2 \
+			user/primespipe \
+			user/testkbd \
+			user/testshell \
 			fs/fs \
 			net/ns
 

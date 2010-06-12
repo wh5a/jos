@@ -16,6 +16,7 @@ pts=5
 timeout=30
 preservefs=n
 qemu=`$make -s --no-print-directory which-qemu`
+brkfn=readline
 
 echo_n () {
 	# suns can't echo -n, and Mac OS X can't echo "x\c"
@@ -26,7 +27,7 @@ echo_n () {
 run () {
 	# Find the address of the kernel readline function,
 	# which the kernel monitor uses to read commands interactively.
-	brkaddr=`grep 'readline$' obj/kern/kernel.sym | sed -e's/ .*$//g'`
+	brkaddr=`grep " $brkfn\$" obj/kern/kernel.sym | sed -e's/ .*$//g'`
 	#echo "brkaddr $brkaddr"
 
 	# Generate a unique GDB port
@@ -48,7 +49,7 @@ run () {
 	) > jos.in
 
 	sleep 1
-	gdb -batch -nx -x jos.in > /dev/null
+	gdb -batch -nx -x jos.in > /dev/null 2>&1
 	t1=`date +%s.%N 2>/dev/null`
 	time=`echo "scale=1; ($t1-$t0)/1" | sed 's/.N/.0/g' | bc 2>/dev/null`
 	time="(${time}s)"

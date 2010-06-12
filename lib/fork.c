@@ -55,9 +55,11 @@ duppage(envid_t envid, unsigned pn)
   int r;
   int pte = vpt[pn];
   void *addr = (void *)(pn << PGSHIFT);
+  // Note that you should use PTE_USER, not PTE_FLAGS, to mask out the relevant bits from the page table entry. PTE_FLAGS picks up the accessed and dirty bits as well.
   int perm = pte & PTE_USER;
 
-  if ((perm&PTE_W) || (perm&PTE_COW)) {
+  // If the page table entry has the PTE_SHARE bit set, just copy the mapping directly. 
+  if (!(perm&PTE_SHARE) && (perm&PTE_W || perm&PTE_COW)) {
     perm &= ~PTE_W;
     perm |= PTE_COW;
     r = sys_page_map(0, addr, envid, addr, perm);

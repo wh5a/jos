@@ -21,6 +21,23 @@ FSIMGTXTFILES :=	fs/newmotd \
 FSIMGTXTFILES :=	$(FSIMGTXTFILES) \
 			fs/index.html
 
+USERAPPS :=		$(USERAPPS) \
+			$(OBJDIR)/user/primespipe \
+			$(OBJDIR)/user/sh \
+			$(OBJDIR)/user/testfdsharing \
+			$(OBJDIR)/user/testkbd \
+			$(OBJDIR)/user/testpipe \
+			$(OBJDIR)/user/testpteshare \
+			$(OBJDIR)/user/testshell \
+			$(OBJDIR)/user/testmalloc
+
+FSIMGTXTFILES :=	$(FSIMGTXTFILES) \
+			fs/lorem \
+			fs/script \
+			fs/out \
+			fs/testshell.key \
+			fs/testshell.out \
+			fs/testshell.sh
 
 
 FSIMGFILES := $(FSIMGTXTFILES) $(USERAPPS)
