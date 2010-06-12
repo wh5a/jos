@@ -149,3 +149,12 @@ sys_time_msec(void)
 	return (unsigned int) syscall(SYS_time_msec, 0, 0, 0, 0, 0, 0);
 }
 
+int sys_net_txbuf(void *bufva, unsigned int size)
+{
+  return syscall(SYS_net_txbuf, 1, (uint32_t) bufva, size, 0, 0, 0);
+}
+
+int sys_net_rxbuf(void *bufva, unsigned int size)
+{
+  return syscall(SYS_net_rxbuf, 1, (uint32_t) bufva, size, 0, 0, 0);
+}
