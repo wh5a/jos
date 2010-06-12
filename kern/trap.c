@@ -155,18 +155,23 @@ trap_dispatch(struct Trapframe *tf)
   //// Lab 6: Add time tick increment to clock interrupts.
     time_tick();
     sched_yield();
-    break;
+    return;
 
     // Handle spurious interupts
     // The hardware sometimes raises these because of noise on the
     // IRQ line or other reasons. We don't care.
-  case IRQ_OFFSET + IRQ_SPURIOUS: {
+  case IRQ_OFFSET + IRQ_SPURIOUS:
       cprintf("Spurious interrupt on irq 7\n");
       print_trapframe(tf);
       return;
-    }
 
   default:
+    if (tf->tf_trapno == IRQ_OFFSET + e100_irq) {
+      e100_intr();
+      irq_eoi();
+      return;
+    }
+
     // Unexpected trap: The user process or the kernel has a bug.
     print_trapframe(tf);
     if (tf->tf_cs == GD_KT)
