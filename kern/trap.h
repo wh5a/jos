@@ -12,7 +12,8 @@
 /* The kernel's interrupt descriptor table */
 extern struct Gatedesc idt[];
 
-void idt_init(void);
+// Initialize the trap-handling module and the processor's IDT.
+void trap_init(void);
 void print_regs(struct PushRegs *regs);
 void print_trapframe(struct Trapframe *tf);
 void page_fault_handler(struct Trapframe *);

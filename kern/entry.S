@@ -63,6 +63,8 @@ relocated:
 
 	# Leave a few words on the stack for the user trap frame
 	movl	$(bootstacktop-SIZEOF_STRUCT_TRAPFRAME),%esp
+	# Set the stack pointer
+	movl	$(cpu_boot+4096),%esp
 
 	# now to C code
 	call	init

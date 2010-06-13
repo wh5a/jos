@@ -14,7 +14,7 @@
 #include <kern/picirq.h>
 #include <kern/time.h>
 #include <kern/pci.h>
-
+#include <kern/cpu.h>
 
 // Called first from entry.S on the bootstrap processor,
 // and later from boot/bootother.S on all other processors.
@@ -27,7 +27,8 @@ init(void)
 	// Before doing anything else, complete the ELF loading process.
 	// Clear the uninitialized global data (BSS) section of our program.
 	// This ensures that all static/global variables start out zero.
-	memset(edata, 0, end - edata);
+	if (cpu_onboot())
+		memset(edata, 0, end - edata);
 
 	// Initialize the console.
 	// Can't call cprintf until after we do this!
@@ -41,7 +42,8 @@ init(void)
 
 	// Lab 3 user environment initialization functions
 	env_init();
-	idt_init();
+	trap_init();
+
         // enable_sep();
 
 	// Lab 4 multitasking initialization functions

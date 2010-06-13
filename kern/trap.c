@@ -13,8 +13,7 @@
 #include <kern/picirq.h>
 #include <kern/time.h>
 #include <kern/e100.h>
-
-static struct Taskstate ts;
+#include <kern/cpu.h>
 
 /* Interrupt descriptor table.  (Must be built at run time because
  * shifted function addresses can't be represented in relocation records.)
@@ -64,8 +63,6 @@ extern uint32_t vectors[];  // in trapentry.S: array of 256 entry pointers
 void
 idt_init(void)
 {
-	extern struct Segdesc gdt[];
-
         int i = 0;
         /* Only one kernel stack, as opposed to one per process in xv6.
            The kernel is not re-entrant (cannot be interrupted), so all IDT entries are interrupt gates.
@@ -81,20 +78,33 @@ idt_init(void)
           SETGATE(idt[i], 0, GD_KT, vectors[i], 0);
           }
 
-	// Setup a TSS so that we get the right stack
-	// when we trap to the kernel.
-	ts.ts_esp0 = KSTACKTOP;
-	ts.ts_ss0 = GD_KD;
+	cpu *c = cpu_cur();
 
-	// Initialize the TSS field of the gdt.
-	gdt[GD_TSS >> 3] = SEG16(STS_T32A, (uint32_t) (&ts),
-					sizeof(struct Taskstate), 0);
-	gdt[GD_TSS >> 3].sd_s = 0;
+	// Setup the TSS for this cpu so that we get the right stack
+	// when we trap into the kernel from user mode.
+	//c->tss.ts_esp0 = (uint32_t) c->kstackhi;
+        c->tss.ts_esp0 = KSTACKTOP;
+	c->tss.ts_ss0 = GD_KD;
 
-	// Load the TSS
+	// Initialize the non-constant part of the cpu's GDT:
+	// the TSS descriptor is different for each cpu.
+	c->gdt[GD_TSS >> 3] = SEG16(STS_T32A, (uint32_t) (&c->tss),
+					sizeof(struct Taskstate)-1, 0);
+	c->gdt[GD_TSS >> 3].sd_s = 0;
+
+	// Load the TSS (from the GDT)
 	ltr(GD_TSS);
+}
 
-	// Load the IDT
+void
+trap_init(void)
+{
+	// The first time we get called on the bootstrap processor,
+	// initialize the IDT.  Other CPUs will share the same IDT.
+	if (cpu_onboot())
+		idt_init();
+
+	// Load the IDT into this processor's IDT register.
 	asm volatile("lidt idt_pd");
 }
 

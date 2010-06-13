@@ -9,6 +9,7 @@
 #include <kern/pmap.h>
 #include <kern/kclock.h>
 #include <kern/env.h>
+#include <kern/cpu.h>
 
 // These variables are set by i386_detect_memory()
 static physaddr_t maxpa;	// Maximum physical address
@@ -23,37 +24,6 @@ static char* boot_freemem;	// Pointer to next byte of free mem
 
 struct Page* pages;		// Virtual address of physical page array
 struct Page_list page_free_list;	// Free list of physical pages
-
-// Global descriptor table.
-//
-// The kernel and user segments are identical (except for the DPL).
-// To load the SS register, the CPL must equal the DPL.  Thus,
-// we must duplicate the segments for the user and the kernel.
-//
-struct Segdesc gdt[] =
-{
-	// 0x0 - unused (always faults -- for trapping NULL far pointers)
-	SEG_NULL,
-
-	// 0x8 - kernel code segment
-	[GD_KT >> 3] = SEG(STA_X | STA_R, 0x0, 0xffffffff, 0),
-
-	// 0x10 - kernel data segment
-	[GD_KD >> 3] = SEG(STA_W, 0x0, 0xffffffff, 0),
-
-	// 0x18 - user code segment
-	[GD_UT >> 3] = SEG(STA_X | STA_R, 0x0, 0xffffffff, 3),
-
-	// 0x20 - user data segment
-	[GD_UD >> 3] = SEG(STA_W, 0x0, 0xffffffff, 3),
-
-	// 0x28 - tss, initialized in idt_init()
-	[GD_TSS >> 3] = SEG_NULL
-};
-
-struct Pseudodesc gdt_pd = {
-	sizeof(gdt) - 1, (unsigned long) gdt
-};
 
 static int
 nvram_read(int r)
@@ -276,8 +246,13 @@ i386_vm_init(void)
 	// Current mapping: KERNBASE+x => x => x.
 	// (x < 4MB so uses paging pgdir[0])
 
+	// Load the GDT
+        cpu *c = cpu_cur();
+	struct Pseudodesc gdt_pd = {
+		sizeof(c->gdt) - 1, (uint32_t) c->gdt };
+
 	// Reload all segment registers.
-	asm volatile("lgdt gdt_pd");
+	asm volatile("lgdt %0" : : "m" (gdt_pd));
 	asm volatile("movw %%ax,%%gs" :: "a" (GD_UD|3));
 	asm volatile("movw %%ax,%%fs" :: "a" (GD_UD|3));
 	asm volatile("movw %%ax,%%es" :: "a" (GD_KD));
