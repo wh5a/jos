@@ -15,6 +15,7 @@
 #include <kern/time.h>
 #include <kern/pci.h>
 #include <kern/cpu.h>
+#include <kern/spinlock.h>
 
 // Called first from entry.S on the bootstrap processor,
 // and later from boot/bootother.S on all other processors.
@@ -45,6 +46,10 @@ init(void)
 	trap_init();
 
         // enable_sep();
+
+	// Lab 8: check spinlock implementation
+	if (cpu_onboot())
+		spinlock_check();
 
 	// Lab 4 multitasking initialization functions
 	pic_init();

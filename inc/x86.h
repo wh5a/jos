@@ -298,4 +298,39 @@ wrmsr(uint32_t msr, uint32_t eax, uint32_t edx)
 	__asm __volatile("wrmsr" : : "c" (msr), "a" (eax), "d" (edx));
 }
 
+// Atomically set *addr to newval and return the old value of *addr.
+static inline uint32_t
+xchg(volatile uint32_t *addr, uint32_t newval)
+{
+	uint32_t result;
+
+	// The + in "+m" denotes a read-modify-write operand.
+	asm volatile("lock; xchgl %0, %1" :
+	       "+m" (*addr), "=a" (result) :
+	       "1" (newval) :
+	       "cc");
+	return result;
+}
+
+/* While a spinlock will work if you just do nothing in the loop,
+   Intel has defined a special instruction called PAUSE that notifies
+   the processor that a spin loop is in progress and can improve
+   system performance in such cases, especially on "hyper-threaded"
+   processors that multiplex a single execution unit among multiple
+   virtual CPUs.
+*/
+static inline void
+pause(void)
+{
+	asm volatile("pause" : : : "memory");
+}
+
+static gcc_inline uint16_t
+read_cs(void)
+{
+        uint16_t cs;
+        __asm __volatile("movw %%cs,%0" : "=rm" (cs));
+        return cs;
+}
+
 #endif /* !JOS_INC_X86_H */

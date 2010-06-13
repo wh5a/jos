@@ -19,7 +19,7 @@
 #include <inc/x86.h>
 #include <inc/mmu.h>
 #include <inc/trap.h>
-
+#include <inc/memlayout.h>
 
 // Per-CPU kernel state structure.
 // Exactly one page (4096 bytes) in size.
