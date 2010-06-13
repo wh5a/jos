@@ -16,8 +16,11 @@
 #include <kern/pci.h>
 
 
+// Called first from entry.S on the bootstrap processor,
+// and later from boot/bootother.S on all other processors.
+// As a rule, "init" functions in PIOS are called once on EACH processor.
 void
-i386_init(void)
+init(void)
 {
 	extern char edata[], end[];
 

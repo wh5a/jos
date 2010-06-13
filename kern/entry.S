@@ -65,7 +65,7 @@ relocated:
 	movl	$(bootstacktop-SIZEOF_STRUCT_TRAPFRAME),%esp
 
 	# now to C code
-	call	i386_init
+	call	init
 
 	# Should never get here, but in case we do, just spin.
 spin:	jmp	spin
