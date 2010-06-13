@@ -18,6 +18,7 @@
 #define GD_UT     0x18     // user text
 #define GD_UD     0x20     // user data
 #define GD_TSS    0x28     // Task segment selector
+#define GD_NDESC	6	// number of GDT entries used, including null
 
 /* http://pdos.csail.mit.edu/6.828/2009/lec/jos_layout.pdf
  *
